@@ -1,6 +1,6 @@
 @font-face {
   font-family: 'HelveticaMLW';
-  src: url('../Helvetica/helvetica_light.otf') format('opentype');
+  src: url('assets/fonts/Helvetica/helvetica_light.otf') format('opentype');
   font-style: normal;
   font-weight: 300;
   font-display: swap;
@@ -8,7 +8,7 @@
 
 @font-face {
   font-family: 'HelveticaMLW';
-  src: url('../Helvetica/helvetica_regular.otf') format('opentype');
+  src: url('assets/fonts/Helvetica/helvetica_regular.otf') format('opentype');
   font-style: normal;
   font-weight: 400;
   font-display: swap;
@@ -16,7 +16,7 @@
 
 @font-face {
   font-family: 'HelveticaMLW';
-  src: url('../Helvetica/helvetica_bold.otf') format('opentype');
+  src: url('assets/fonts/Helvetica/helvetica_bold.otf') format('opentype');
   font-style: normal;
   font-weight: 700;
   font-display: swap;
@@ -24,7 +24,7 @@
 
 @font-face {
   font-family: 'HelveticaMLW';
-  src: url('../Helvetica/helvetica_oblique.otf') format('opentype');
+  src: url('assets/fonts/Helvetica/helvetica_oblique.otf') format('opentype');
   font-style: italic;
   font-weight: 400;
   font-display: swap;

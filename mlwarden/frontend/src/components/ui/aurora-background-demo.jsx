@@ -1,12 +1,12 @@
 import React from 'react'
-import { motion } from 'framer-motion'
+import { motion as Motion } from 'framer-motion'
 import { Sparkles } from 'lucide-react'
 import { AuroraBackground } from './aurora-background'
 
 export function AuroraBackgroundDemo() {
   return (
     <AuroraBackground>
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{
@@ -22,7 +22,7 @@ export function AuroraBackgroundDemo() {
           <Sparkles size={16} />
           Debug now
         </button>
-      </motion.div>
+      </Motion.div>
     </AuroraBackground>
   )
 }
