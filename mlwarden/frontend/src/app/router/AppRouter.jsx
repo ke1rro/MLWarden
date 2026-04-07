@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion as Motion } from 'framer-motion'
 import {
   BrowserRouter,
   Navigate,
@@ -6,18 +6,18 @@ import {
   Routes,
   useLocation,
 } from 'react-router-dom'
-import { ProjectsPage } from '../../pages/dashboard/ProjectsPage'
-import { NewProjectPage } from '../../pages/dashboard/NewProjectPage'
-import { RunsPage } from '../../pages/runs/RunsPage'
-import { OverviewPage } from '../../pages/runs/OverviewPage'
-import { NotFoundPage } from '../../pages/not-found/NotFoundPage'
+import { ProjectsPage } from '@/pages/dashboard/ProjectsPage'
+import { NewProjectPage } from '@/pages/dashboard/NewProjectPage'
+import { RunsPage } from '@/pages/runs/RunsPage'
+import { OverviewPage } from '@/pages/runs/OverviewPage'
+import { NotFoundPage } from '@/pages/not-found/NotFoundPage'
 
 function AnimatedRoutes() {
   const location = useLocation()
 
   return (
     <AnimatePresence mode="wait" initial={false}>
-      <motion.div
+      <Motion.div
         key={location.pathname}
         className="page-transition-layer"
         initial={{ opacity: 0, y: 8, scale: 0.9985 }}
@@ -39,7 +39,7 @@ function AnimatedRoutes() {
           />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
-      </motion.div>
+      </Motion.div>
     </AnimatePresence>
   )
 }

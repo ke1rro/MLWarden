@@ -1,5 +1,6 @@
 fastapi[standard]
-pymongo
 pydantic
 pip-tools
 pre-commit
+isort
+black

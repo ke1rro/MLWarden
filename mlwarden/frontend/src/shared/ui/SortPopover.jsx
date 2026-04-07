@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion as Motion } from 'framer-motion'
 import { Check, ChevronDown } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
@@ -55,7 +55,7 @@ export function SortPopover({
 
       <AnimatePresence>
         {isOpen ? (
-          <motion.div
+          <Motion.div
             className="sort-menu"
             role="menu"
             initial={{ opacity: 0, y: -8, scale: 0.96 }}
@@ -67,7 +67,7 @@ export function SortPopover({
               const isSelected = option.value === selected
 
               return (
-                <motion.button
+                <Motion.button
                   key={option.value}
                   type="button"
                   role="menuitemradio"
@@ -83,10 +83,10 @@ export function SortPopover({
                 >
                   <span>{option.label}</span>
                   {isSelected ? <Check size={14} /> : null}
-                </motion.button>
+                </Motion.button>
               )
             })}
-          </motion.div>
+          </Motion.div>
         ) : null}
       </AnimatePresence>
     </div>
