@@ -1,19 +1,24 @@
-from __future__ import annotations
-
 import importlib
+import sys
 import threading
 import time
+from pathlib import Path
 from typing import Any
 
 import httpx
 import pytest
 import uvicorn
-from conftest import TEST_API_KEY
 from fastapi import FastAPI, HTTPException, Request
+
+TEST_API_KEY = "dev-api-key"
+
+SDK_ROOT = Path(__file__).resolve().parents[2] / "sdk"
+if str(SDK_ROOT) not in sys.path:
+    sys.path.insert(0, str(SDK_ROOT))
 
 
 @pytest.fixture()
-def sdk_mock_server(unused_tcp_port: int) -> tuple[str, list[dict[str, Any]]]:
+def sdk_mock_server(free_tcp_port: int) -> tuple[str, list[dict[str, Any]]]:
     app = FastAPI()
     calls: list[dict[str, Any]] = []
     project = {"id": "project-sdk", "name": "sdk-project"}
@@ -113,11 +118,11 @@ def sdk_mock_server(unused_tcp_port: int) -> tuple[str, list[dict[str, Any]]]:
         )
         return body
 
-    base_url = f"http://127.0.0.1:{unused_tcp_port}"
+    base_url = f"http://127.0.0.1:{free_tcp_port}"
     config = uvicorn.Config(
         app,
         host="127.0.0.1",
-        port=unused_tcp_port,
+        port=free_tcp_port,
         log_level="warning",
         lifespan="off",
         ws="websockets-sansio",

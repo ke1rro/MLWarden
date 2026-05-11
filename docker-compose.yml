@@ -1,8 +1,8 @@
 services:
   backend:
     build:
-      context: .
-      dockerfile: mlwarden/backend/Dockerfile
+      context: mlwarden/backend
+      dockerfile: Dockerfile
     environment:
       APP_ENV: ${APP_ENV:-production}
       APP_SECRET_KEY: ${APP_SECRET_KEY:-change-me}

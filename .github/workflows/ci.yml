@@ -39,7 +39,7 @@ jobs:
           python -m pip install -e .
 
       - name: Run backend test suite
-        run: pytest mlwarden/backend/tests -m "not sdk"
+        run: pytest mlwarden/tests -m "not sdk"
 
   sdk-tests:
     name: SDK tests
@@ -68,4 +68,4 @@ jobs:
           python -m pip install -e .
 
       - name: Run SDK test suite
-        run: pytest mlwarden/backend/tests -m sdk
+        run: pytest mlwarden/tests -m sdk

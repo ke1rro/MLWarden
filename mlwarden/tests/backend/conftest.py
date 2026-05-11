@@ -1,8 +1,5 @@
-from __future__ import annotations
-
 import base64
 import importlib
-import json
 import os
 import sys
 import tempfile
@@ -15,7 +12,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-BACKEND_ROOT = Path(__file__).resolve().parents[1]
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
@@ -77,9 +74,8 @@ def _load_object(target: str) -> Any:
 def _load_fastapi_app() -> Any:
     candidates = [
         os.environ.get("MLWARDEN_BACKEND_APP"),
-        "app.main:app",
-        "app.main:create_app",
-        "app.app:app",
+        "backend.app:app",
+        "backend.app:create_app",
     ]
 
     errors: list[str] = []
@@ -102,7 +98,8 @@ def _load_fastapi_app() -> Any:
 
     pytest.fail(
         "Could not import the backend FastAPI app. Set MLWARDEN_BACKEND_APP to "
-        "'module:app' or expose app.main:app/app.main:create_app.\n" + "\n".join(errors)
+        "'module:app' or expose backend.app:app/backend.app:create_app.\n"
+        + "\n".join(errors)
     )
 
 

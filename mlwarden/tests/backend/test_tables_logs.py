@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Any, Callable
 
 from conftest import assert_status, assert_utc_timestamp, extract_items, response_body

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Any, Callable
 
 from conftest import PNG_1X1, assert_error_response, assert_status, response_body

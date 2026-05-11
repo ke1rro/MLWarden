@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 import os
 import traceback as traceback_module
@@ -23,22 +21,10 @@ class Tracker:
         timeout: float = 30.0,
     ) -> None:
         self.base_url = (
-            base_url
-            or os.environ.get("MLWARDEN_URL")
-            or os.environ.get("MINI_TRACKER_URL")
-            or "http://localhost:8000"
+            base_url or os.environ.get("MLWARDEN_URL") or "http://localhost:8000"
         ).rstrip("/")
-        self.api_key = (
-            api_key
-            or os.environ.get("MLWARDEN_API_KEY")
-            or os.environ.get("MINI_TRACKER_API_KEY")
-        )
-        self.project_name = (
-            project
-            or os.environ.get("MLWARDEN_PROJECT")
-            or os.environ.get("MINI_TRACKER_PROJECT")
-            or "default"
-        )
+        self.api_key = api_key or os.environ.get("MLWARDEN_API_KEY")
+        self.project_name = project or os.environ.get("MLWARDEN_PROJECT") or "default"
         self.client = httpx.Client(base_url=self.base_url, timeout=timeout)
 
     @property
