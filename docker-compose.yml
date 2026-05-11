@@ -1,14 +1,22 @@
 services:
   backend:
     build:
-      context: .
-      dockerfile: mlwarden/backend/Dockerfile
+      context: ./mlwarden/backend
+      dockerfile: Dockerfile
     env_file:
       - .env
     ports:
       - "8000:8000"
     volumes:
       - backend-data:/data
+  frontend:
+    build:
+      context: ./mlwarden/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
 
 volumes:
   backend-data:
