@@ -29,13 +29,13 @@ jobs:
           python-version: "3.11"
           cache: pip
           cache-dependency-path: |
-            requirements.txt
+            mlwarden/backend/requirements.txt
             pyproject.toml
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install -r requirements.txt
+          python -m pip install -r mlwarden/backend/requirements.txt
           python -m pip install -e .
 
       - name: Run backend test suite
@@ -58,14 +58,40 @@ jobs:
           python-version: "3.11"
           cache: pip
           cache-dependency-path: |
-            requirements.txt
+            mlwarden/backend/requirements.txt
             pyproject.toml
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install -r requirements.txt
+          python -m pip install -r mlwarden/backend/requirements.txt
           python -m pip install -e .
 
       - name: Run SDK test suite
         run: pytest mlwarden/tests -m sdk
+
+  docker-build:
+    name: Docker image build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./mlwarden/backend
+          file: ./mlwarden/backend/Dockerfile
+          load: true
+          tags: mlwarden-backend:latest
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./mlwarden/frontend
+          file: ./mlwarden/frontend/Dockerfile
+          load: true
+          tags: mlwarden-frontend:latest
