@@ -87,6 +87,12 @@
   font-size: 13px;
 }
 
+.button-sm {
+  font-size: 12px;
+  min-height: 28px;
+  padding: 5px 8px;
+}
+
 .full-width {
   width: 100%;
 }

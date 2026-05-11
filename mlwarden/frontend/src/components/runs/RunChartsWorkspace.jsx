@@ -1,6 +1,7 @@
 import { Plus, Settings, SlidersHorizontal } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/common/Button.jsx'
+import { EmptyState } from '@/components/common/EmptyState.jsx'
 import { SearchInput } from '@/components/common/SearchInput.jsx'
 import { Toolbar } from '@/components/common/Toolbar.jsx'
 import { IconButton } from '@/components/common/IconButton.jsx'
@@ -20,13 +21,20 @@ const defaultPanels = [
 export function RunChartsWorkspace({ metricSeries }) {
   const [query, setQuery] = useState('')
   const [panels, setPanels] = useState(defaultPanels)
-
-  const visiblePanels = panels.filter((panel) => panel.toLowerCase().includes(query.toLowerCase()))
-  const availablePanels = Object.keys(metricSeries).filter((panel) => !panels.includes(panel))
+  const metricNames = Object.keys(metricSeries)
+  const activePanels = panels.filter((panel) => metricNames.includes(panel))
+  const chartPanels = activePanels.length ? activePanels : metricNames.slice(0, 4)
+  const visiblePanels = chartPanels.filter((panel) => panel.toLowerCase().includes(query.toLowerCase()))
+  const availablePanels = metricNames.filter((panel) => !chartPanels.includes(panel))
 
   function handleAddPanel() {
-    const nextPanel = availablePanels[0] || defaultPanels.find((panel) => !panels.includes(panel)) || 'val.psnr'
+    const nextPanel = availablePanels[0]
+    if (!nextPanel) return
     setPanels((current) => [...current, nextPanel])
+  }
+
+  if (!metricNames.length) {
+    return <EmptyState title="No metrics logged yet." message="Charts will appear after a worker logs metrics for this run." />
   }
 
   return (

@@ -7,7 +7,7 @@ const sections = [
   ['Worker API key', 'Static key', 'dev-api-key'],
   ['Artifact storage', 'Local root', '/data/artifacts'],
   ['Appearance', 'Density', 'Compact'],
-  ['About', 'Mode', 'Frontend prototype with mock data'],
+  ['About', 'Mode', 'Backend-connected workspace'],
 ]
 
 export default function SettingsPage() {

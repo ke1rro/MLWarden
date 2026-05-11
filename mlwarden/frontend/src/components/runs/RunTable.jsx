@@ -1,9 +1,26 @@
 import { Link } from 'react-router-dom'
-import { ActionMenu } from '@/components/common/ActionMenu.jsx'
+import { Button } from '@/components/common/Button.jsx'
 import { EmptyState } from '@/components/common/EmptyState.jsx'
 import { StatusBadge } from '@/components/common/StatusBadge.jsx'
 
-export function RunTable({ runs }) {
+function RunActions({ run, onRunAction }) {
+  if (!onRunAction) return null
+
+  return (
+    <div className="table-actions">
+      {run.status === 'created' ? <Button onClick={() => onRunAction(run, 'start')} size="sm" variant="secondary">Start</Button> : null}
+      {run.status === 'running' ? <Button onClick={() => onRunAction(run, 'finish')} size="sm" variant="secondary">Finish</Button> : null}
+      {['created', 'running'].includes(run.status) ? (
+        <>
+          <Button onClick={() => onRunAction(run, 'fail')} size="sm" variant="secondary">Fail</Button>
+          <Button onClick={() => onRunAction(run, 'cancel')} size="sm" variant="secondary">Cancel</Button>
+        </>
+      ) : null}
+    </div>
+  )
+}
+
+export function RunTable({ runs, onRunAction }) {
   if (!runs.length) {
     return <EmptyState title="No runs match these filters." message="Adjust the filters or start a worker run." />
   }
@@ -45,7 +62,7 @@ export function RunTable({ runs }) {
                 </div>
               </td>
               <td>{run.worker}</td>
-              <td><ActionMenu /></td>
+              <td><RunActions run={run} onRunAction={onRunAction} /></td>
             </tr>
           ))}
         </tbody>

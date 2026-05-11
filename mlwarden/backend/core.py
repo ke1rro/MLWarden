@@ -20,6 +20,10 @@ from fastapi import Request, UploadFile, WebSocket
 RUN_STATUSES = {"created", "running", "finished", "failed", "cancelled"}
 TERMINAL_RUN_STATUSES = {"finished", "failed", "cancelled"}
 IMAGE_CONTENT_TYPES = {"image/png", "image/jpeg", "image/webp"}
+DEV_CORS_ORIGINS = [
+    *(f"http://localhost:{port}" for port in range(5173, 5180)),
+    *(f"http://127.0.0.1:{port}" for port in range(5173, 5180)),
+]
 JSON_FIELDS = {
     "projects": {"tags", "metadata"},
     "runs": {"tags", "metadata", "summary"},
@@ -116,17 +120,20 @@ def parse_users(raw: str) -> dict[str, str]:
 
 
 def load_settings() -> Settings:
+    env = os.environ.get("APP_ENV", "development")
     database_url = os.environ.get("APP_DATABASE_URL", "sqlite:///./mlwarden.sqlite3")
     artifact_root = Path(os.environ.get("APP_ARTIFACT_ROOT", "./artifacts")).resolve()
     cors_origins = [
         origin.strip()
-        for origin in os.environ.get("APP_CORS_ORIGINS", "http://localhost:5173").split(
-            ","
-        )
+        for origin in os.environ.get(
+            "APP_CORS_ORIGINS", ",".join(DEV_CORS_ORIGINS[:2])
+        ).split(",")
         if origin.strip()
     ]
+    if env == "development":
+        cors_origins = list(dict.fromkeys([*cors_origins, *DEV_CORS_ORIGINS]))
     return Settings(
-        env=os.environ.get("APP_ENV", "development"),
+        env=env,
         secret_key=os.environ.get("APP_SECRET_KEY", "change-me"),
         users=parse_users(os.environ.get("APP_USERS", "admin:password")),
         api_key=os.environ.get("APP_API_KEY"),

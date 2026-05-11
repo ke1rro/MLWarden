@@ -11,7 +11,7 @@ export function EventTimeline({ events }) {
       {events.map((event) => (
         <li key={event.id}>
           <span className="timeline-dot" />
-          <time>{event.timestamp}</time>
+          <time>{event.timestampLabel || event.timestamp}</time>
           <strong>{event.type}</strong>
           <JsonPreview value={event.payload} />
         </li>

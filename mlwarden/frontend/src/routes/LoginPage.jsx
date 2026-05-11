@@ -5,7 +5,7 @@ import { Button } from '@/components/common/Button.jsx'
 import { Logo } from '@/components/common/Logo.jsx'
 
 export default function LoginPage() {
-  const { isAuthenticated, login } = useAuth()
+  const { isAuthenticated, isBootstrapping, login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [username, setUsername] = useState('admin')
@@ -13,24 +13,27 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  if (isAuthenticated) {
+  if (isAuthenticated && !isBootstrapping) {
     return <Navigate to="/projects" replace />
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
     setError('')
     setLoading(true)
 
-    window.setTimeout(() => {
+    try {
       if (!username.trim() || !password.trim()) {
-        setError('Enter any username and password for the frontend prototype.')
-        setLoading(false)
+        setError('Enter a username and password.')
         return
       }
-      login(username.trim())
+      await login(username.trim(), password)
       navigate(location.state?.from || '/projects', { replace: true })
-    }, 350)
+    } catch (err) {
+      setError(err.message || 'Sign in failed.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

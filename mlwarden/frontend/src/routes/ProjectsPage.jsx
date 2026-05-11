@@ -1,35 +1,120 @@
 import { Plus } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { adaptProject, summarizeProjects } from '@/api/adapters.js'
+import { createProject, listProjects } from '@/api/projects.js'
+import { useNotifications } from '@/app/useNotifications.js'
 import { AppLayout } from '@/components/layout/AppLayout.jsx'
 import { Button } from '@/components/common/Button.jsx'
+import { ErrorState } from '@/components/common/ErrorState.jsx'
+import { LoadingState } from '@/components/common/LoadingState.jsx'
 import { PageHeader } from '@/components/common/PageHeader.jsx'
 import { SearchInput } from '@/components/common/SearchInput.jsx'
 import { Toolbar } from '@/components/common/Toolbar.jsx'
 import { ProjectSummaryCards } from '@/components/projects/ProjectSummaryCards.jsx'
 import { ProjectTable } from '@/components/projects/ProjectTable.jsx'
-import { trackerApi } from '@/api/TrackerApi.js'
+
+const refreshEvents = new Set([
+  'backend.connected',
+  'project.created',
+  'project.updated',
+  'project.deleted',
+  'run.created',
+  'run.started',
+  'run.finished',
+  'run.failed',
+  'run.cancelled',
+])
 
 export default function ProjectsPage() {
   const [query, setQuery] = useState('')
-  const projects = useMemo(() => trackerApi.listProjects(), [])
-  const summary = useMemo(() => trackerApi.getProjectSummary(), [])
+  const [projects, setProjects] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+  const [form, setForm] = useState({ name: '', description: '', tags: '' })
+  const { subscribe } = useNotifications()
+  const summary = useMemo(() => summarizeProjects(projects), [projects])
   const filteredProjects = useMemo(
     () => projects.filter((project) => `${project.name} ${project.description} ${project.tags.join(' ')}`.toLowerCase().includes(query.toLowerCase())),
     [projects, query],
   )
+
+  const loadProjects = useCallback(async () => {
+    setError('')
+    try {
+      const response = await listProjects()
+      setProjects((response.items || []).map(adaptProject))
+    } catch (err) {
+      setError(err.message || 'Failed to load projects.')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadProjects()
+  }, [loadProjects])
+
+  useEffect(() => subscribe((message) => {
+    if (refreshEvents.has(message.type)) loadProjects()
+  }), [loadProjects, subscribe])
+
+  async function handleCreateProject(event) {
+    event.preventDefault()
+    setIsCreating(true)
+    setError('')
+    try {
+      await createProject({
+        name: form.name.trim(),
+        description: form.description.trim() || null,
+        tags: form.tags.split(',').map((tag) => tag.trim()).filter(Boolean),
+        metadata: {},
+      })
+      setForm({ name: '', description: '', tags: '' })
+      setIsCreateOpen(false)
+      await loadProjects()
+    } catch (err) {
+      setError(err.message || 'Failed to create project.')
+    } finally {
+      setIsCreating(false)
+    }
+  }
 
   return (
     <AppLayout breadcrumbs={['MLWarden', 'Projects']}>
       <PageHeader
         title="Projects"
         subtitle="Track experiment runs, metrics, artifacts, and workflow outputs."
-        actions={<Button><Plus size={15} /> New project</Button>}
+        actions={<Button onClick={() => setIsCreateOpen((current) => !current)}><Plus size={15} /> New project</Button>}
       />
+      {isCreateOpen ? (
+        <form className="panel inline-form" onSubmit={handleCreateProject}>
+          <label>
+            Project name
+            <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required />
+          </label>
+          <label>
+            Description
+            <input value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} />
+          </label>
+          <label>
+            Tags
+            <input placeholder="vision, compression" value={form.tags} onChange={(event) => setForm((current) => ({ ...current, tags: event.target.value }))} />
+          </label>
+          <div className="button-row">
+            <Button disabled={isCreating} type="submit">{isCreating ? 'Creating...' : 'Create project'}</Button>
+            <Button onClick={() => setIsCreateOpen(false)} variant="secondary">Cancel</Button>
+          </div>
+        </form>
+      ) : null}
       <ProjectSummaryCards summary={summary} />
       <Toolbar>
         <SearchInput value={query} onChange={setQuery} placeholder="Search projects" />
       </Toolbar>
-      <ProjectTable projects={filteredProjects} />
+      {isLoading ? <LoadingState message="Loading projects..." /> : null}
+      {error ? <ErrorState message={error} /> : null}
+      {!isLoading && !error ? <ProjectTable projects={filteredProjects} /> : null}
     </AppLayout>
   )
 }
