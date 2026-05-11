@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../app/useAuth.js'
 import { Button } from '../components/common/Button.jsx'
+import { Logo } from '../components/common/Logo.jsx'
 
 export default function LoginPage() {
   const { isAuthenticated, login } = useAuth()
@@ -36,8 +37,7 @@ export default function LoginPage() {
     <main className="login-page">
       <form className="login-card" onSubmit={handleSubmit}>
         <div className="login-brand">
-          <span className="brand-glyph">M</span>
-          <h1>MLWarden</h1>
+          <Logo />
           <p>Self-hosted experiment and workflow tracking.</p>
         </div>
         <label>
