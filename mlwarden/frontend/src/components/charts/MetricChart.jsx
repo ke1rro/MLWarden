@@ -1,0 +1,66 @@
+import { useEffect, useRef } from 'react'
+import * as echarts from 'echarts'
+import { EmptyState } from '../common/EmptyState.jsx'
+import { ErrorState } from '../common/ErrorState.jsx'
+
+export function MetricChart({ title, series, type = 'line', area = false }) {
+  const chartRef = useRef(null)
+
+  useEffect(() => {
+    if (!chartRef.current || !series?.length) return undefined
+
+    const chart = echarts.init(chartRef.current, null, { renderer: 'canvas' })
+    const points = series.map((point) => point.step)
+    const values = series.map((point) => point.value)
+
+    chart.setOption({
+      animation: false,
+      color: ['#2563eb'],
+      grid: { left: 44, right: 16, top: 16, bottom: 30 },
+      tooltip: { trigger: 'axis', confine: true },
+      xAxis: {
+        type: 'category',
+        data: points,
+        boundaryGap: type === 'bar',
+        axisLabel: { color: '#667085', fontSize: 10 },
+        axisLine: { lineStyle: { color: '#d9dee7' } },
+      },
+      yAxis: {
+        type: 'value',
+        scale: true,
+        axisLabel: { color: '#667085', fontSize: 10 },
+        splitLine: { lineStyle: { color: '#eef1f5' } },
+      },
+      series: [
+        {
+          name: title,
+          type: type === 'area' ? 'line' : type,
+          data: values,
+          smooth: type !== 'bar',
+          symbolSize: 4,
+          lineStyle: { width: 2 },
+          areaStyle: area || type === 'area' ? { opacity: 0.12 } : undefined,
+          barMaxWidth: 18,
+        },
+      ],
+    })
+
+    const resizeObserver = new ResizeObserver(() => chart.resize())
+    resizeObserver.observe(chartRef.current)
+
+    return () => {
+      resizeObserver.disconnect()
+      chart.dispose()
+    }
+  }, [area, series, title, type])
+
+  if (!series) {
+    return <ErrorState title="Invalid chart config" message="No metric series was found for this panel." />
+  }
+
+  if (!series.length) {
+    return <EmptyState title="No metrics logged yet." message="Start a worker run or log metrics through the Python client." />
+  }
+
+  return <div className="metric-chart" ref={chartRef} />
+}
