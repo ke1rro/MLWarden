@@ -3,13 +3,20 @@ import * as echarts from 'echarts'
 import { EmptyState } from '../common/EmptyState.jsx'
 import { ErrorState } from '../common/ErrorState.jsx'
 
+const axisLabel = {
+  color: '#475467',
+  fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  fontSize: 12,
+  fontWeight: 500,
+}
+
 export function MetricChart({ title, series, type = 'line', area = false }) {
   const chartRef = useRef(null)
 
   useEffect(() => {
     if (!chartRef.current || !series?.length) return undefined
 
-    const chart = echarts.init(chartRef.current, null, { renderer: 'canvas' })
+    const chart = echarts.init(chartRef.current, null, { renderer: 'svg' })
     const points = series.map((point) => point.step)
     const values = series.map((point) => point.value)
 
@@ -22,13 +29,13 @@ export function MetricChart({ title, series, type = 'line', area = false }) {
         type: 'category',
         data: points,
         boundaryGap: type === 'bar',
-        axisLabel: { color: '#667085', fontSize: 10 },
+        axisLabel,
         axisLine: { lineStyle: { color: '#d9dee7' } },
       },
       yAxis: {
         type: 'value',
         scale: true,
-        axisLabel: { color: '#667085', fontSize: 10 },
+        axisLabel,
         splitLine: { lineStyle: { color: '#eef1f5' } },
       },
       series: [

@@ -15,7 +15,6 @@
   z-index: 20;
 }
 
-.brand-mark,
 .breadcrumb-item,
 .topbar-actions,
 .run-title-row,
@@ -25,24 +24,8 @@
   display: flex;
 }
 
-.brand-mark {
-  gap: var(--space-2);
-  min-width: 160px;
-}
-
-.brand-glyph {
-  align-items: center;
-  background: var(--color-primary);
-  border-radius: var(--radius-sm);
-  display: inline-flex;
-  font-weight: 800;
-  height: 26px;
-  justify-content: center;
-  width: 26px;
-}
-
-.brand-name {
-  font-weight: 700;
+.topbar-logo {
+  min-width: 190px;
 }
 
 .breadcrumbs {
