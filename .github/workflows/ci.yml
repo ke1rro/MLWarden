@@ -70,8 +70,8 @@ jobs:
       - name: Run SDK test suite
         run: pytest mlwarden/tests -m sdk
 
-  docker-build:
-    name: Docker image build
+  docker-build-backend:
+    name: Docker build (backend)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -87,6 +87,16 @@ jobs:
           file: ./mlwarden/backend/Dockerfile
           load: true
           tags: mlwarden-backend:latest
+
+  docker-build-frontend:
+    name: Docker build (frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build frontend image
         uses: docker/build-push-action@v5
