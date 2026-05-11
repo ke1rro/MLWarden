@@ -1,4 +1,5 @@
 import json
+import mimetypes
 import os
 import traceback as traceback_module
 from pathlib import Path
@@ -41,16 +42,12 @@ class Tracker:
                 detail = response.json()
             except ValueError:
                 detail = response.text
-            raise TrackerError(
-                f"{method} {path} failed with {response.status_code}: {detail}"
-            )
+            raise TrackerError(f"{method} {path} failed with {response.status_code}: {detail}")
         if not response.content:
             return {}
         return response.json()
 
-    def get_or_create_project(
-        self, name: str, description: str | None = None
-    ) -> dict[str, Any]:
+    def get_or_create_project(self, name: str, description: str | None = None) -> dict[str, Any]:
         projects = self.request("GET", "/api/projects", params={"name": name})
         items = (
             projects
@@ -145,9 +142,7 @@ class Run:
             "error_type": error_type,
             "traceback": traceback,
         }
-        self.data = self.tracker.request(
-            "POST", f"/api/runs/{self.id}/fail", json=payload
-        )
+        self.data = self.tracker.request("POST", f"/api/runs/{self.id}/fail", json=payload)
         return self.data
 
     def log_metric(
@@ -165,9 +160,7 @@ class Run:
             payload["timestamp"] = timestamp
         if context is not None:
             payload["context"] = context
-        return self.tracker.request(
-            "POST", f"/api/runs/{self.id}/metrics", json=payload
-        )
+        return self.tracker.request("POST", f"/api/runs/{self.id}/metrics", json=payload)
 
     def log_metrics(self, metrics: list[dict[str, Any]]) -> dict[str, Any]:
         return self.tracker.request(
@@ -175,9 +168,7 @@ class Run:
         )
 
     def log_params(self, params: dict[str, Any]) -> dict[str, Any]:
-        return self.tracker.request(
-            "PUT", f"/api/runs/{self.id}/params", json={"params": params}
-        )
+        return self.tracker.request("PUT", f"/api/runs/{self.id}/params", json={"params": params})
 
     def log_log(
         self,
@@ -206,9 +197,7 @@ class Run:
             json={"columns": columns or [], "rows": rows, "metadata": {}},
         )
 
-    def append_table_rows(
-        self, name: str, rows: list[dict[str, Any]]
-    ) -> dict[str, Any]:
+    def append_table_rows(self, name: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
         return self.tracker.request(
             "POST", f"/api/runs/{self.id}/tables/{name}/rows", json={"rows": rows}
         )
@@ -229,12 +218,13 @@ class Run:
             data["caption"] = caption
         if metadata is not None:
             data["metadata"] = json.dumps(metadata)
+        content_type = mimetypes.guess_type(file_path.name)[0] or "application/octet-stream"
         with file_path.open("rb") as file:
             return self.tracker.request(
                 "POST",
                 f"/api/runs/{self.id}/images",
                 data=data,
-                files={"file": (file_path.name, file, "application/octet-stream")},
+                files={"file": (file_path.name, file, content_type)},
             )
 
     def log_artifact(

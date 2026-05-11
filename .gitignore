@@ -7,6 +7,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+examples/outputs/*
+!examples/outputs/.gitkeep
+artifacts/
+
 node_modules
 dist
 dist-ssr
