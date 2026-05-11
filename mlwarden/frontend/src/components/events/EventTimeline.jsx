@@ -1,5 +1,5 @@
-import { EmptyState } from '../common/EmptyState.jsx'
-import { JsonPreview } from '../common/JsonPreview.jsx'
+import { EmptyState } from '@/components/common/EmptyState.jsx'
+import { JsonPreview } from '@/components/common/JsonPreview.jsx'
 
 export function EventTimeline({ events }) {
   if (!events.length) {

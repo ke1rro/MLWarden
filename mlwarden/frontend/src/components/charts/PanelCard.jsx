@@ -1,6 +1,6 @@
 import { X } from 'lucide-react'
-import { ActionMenu } from '../common/ActionMenu.jsx'
-import { IconButton } from '../common/IconButton.jsx'
+import { ActionMenu } from '@/components/common/ActionMenu.jsx'
+import { IconButton } from '@/components/common/IconButton.jsx'
 
 export function PanelCard({ title, children, onRemove }) {
   return (

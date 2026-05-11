@@ -1,6 +1,6 @@
 import { FolderKanban, WifiOff } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { Logo } from '../components/common/Logo.jsx'
+import { Logo } from '@/components/common/Logo.jsx'
 
 export default function OfflinePage() {
   return (

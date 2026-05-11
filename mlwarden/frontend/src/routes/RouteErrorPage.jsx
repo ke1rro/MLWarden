@@ -1,7 +1,7 @@
 import { AlertTriangle, FolderKanban, RotateCcw } from 'lucide-react'
 import { Link, useRouteError } from 'react-router-dom'
-import { Button } from '../components/common/Button.jsx'
-import { Logo } from '../components/common/Logo.jsx'
+import { Button } from '@/components/common/Button.jsx'
+import { Logo } from '@/components/common/Logo.jsx'
 
 export default function RouteErrorPage() {
   const error = useRouteError()

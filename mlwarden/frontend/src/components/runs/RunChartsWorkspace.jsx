@@ -1,10 +1,10 @@
 import { Plus, Settings, SlidersHorizontal } from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '../common/Button.jsx'
-import { SearchInput } from '../common/SearchInput.jsx'
-import { Toolbar } from '../common/Toolbar.jsx'
-import { IconButton } from '../common/IconButton.jsx'
-import { ChartGrid } from '../charts/ChartGrid.jsx'
+import { Button } from '@/components/common/Button.jsx'
+import { SearchInput } from '@/components/common/SearchInput.jsx'
+import { Toolbar } from '@/components/common/Toolbar.jsx'
+import { IconButton } from '@/components/common/IconButton.jsx'
+import { ChartGrid } from '@/components/charts/ChartGrid.jsx'
 
 const defaultPanels = [
   'val.psnr',

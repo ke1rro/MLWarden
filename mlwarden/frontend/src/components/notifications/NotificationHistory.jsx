@@ -1,6 +1,6 @@
 import { BellRing, CheckCheck, WifiOff } from 'lucide-react'
-import { useNotifications } from '../../app/useNotifications.js'
-import { Button } from '../common/Button.jsx'
+import { useNotifications } from '@/app/useNotifications.js'
+import { Button } from '@/components/common/Button.jsx'
 
 function formatTimestamp(timestamp) {
   return new Intl.DateTimeFormat(undefined, {

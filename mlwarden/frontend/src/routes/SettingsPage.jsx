@@ -1,5 +1,5 @@
-import { PageHeader } from '../components/common/PageHeader.jsx'
-import { AppLayout } from '../components/layout/AppLayout.jsx'
+import { PageHeader } from '@/components/common/PageHeader.jsx'
+import { AppLayout } from '@/components/layout/AppLayout.jsx'
 
 const sections = [
   ['General', 'Instance name', 'MLWarden local'],

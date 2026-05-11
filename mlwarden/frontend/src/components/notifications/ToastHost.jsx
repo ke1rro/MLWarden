@@ -1,7 +1,7 @@
 import { BellRing, WifiOff, X } from 'lucide-react'
-import { useNotifications } from '../../app/useNotifications.js'
-import { Button } from '../common/Button.jsx'
-import { IconButton } from '../common/IconButton.jsx'
+import { useNotifications } from '@/app/useNotifications.js'
+import { Button } from '@/components/common/Button.jsx'
+import { IconButton } from '@/components/common/IconButton.jsx'
 
 export function ToastHost() {
   const { activeToasts, dismissAllToasts, dismissNotification } = useNotifications()

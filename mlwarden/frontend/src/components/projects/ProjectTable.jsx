@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
-import { getProjectStats } from '../../mockData.js'
-import { ActionMenu } from '../common/ActionMenu.jsx'
-import { EmptyState } from '../common/EmptyState.jsx'
+import { ActionMenu } from '@/components/common/ActionMenu.jsx'
+import { EmptyState } from '@/components/common/EmptyState.jsx'
 
 export function ProjectTable({ projects }) {
   if (!projects.length) {
@@ -23,30 +22,27 @@ export function ProjectTable({ projects }) {
           </tr>
         </thead>
         <tbody>
-          {projects.map((project) => {
-            const stats = getProjectStats(project.id)
-            return (
-              <tr key={project.id}>
-                <td>
-                  <Link className="table-link" to={`/projects/${project.id}`}>
-                    {project.name}
-                  </Link>
-                </td>
-                <td className="muted-cell">{project.description}</td>
-                <td>{stats.runs}</td>
-                <td>{stats.running}</td>
-                <td>{project.latestRun}</td>
-                <td>
-                  <div className="tag-row">
-                    {project.tags.map((tag) => (
-                      <span className="tag" key={tag}>{tag}</span>
-                    ))}
-                  </div>
-                </td>
-                <td><ActionMenu /></td>
-              </tr>
-            )
-          })}
+          {projects.map((project) => (
+            <tr key={project.id}>
+              <td>
+                <Link className="table-link" to={`/projects/${project.id}`}>
+                  {project.name}
+                </Link>
+              </td>
+              <td className="muted-cell">{project.description}</td>
+              <td>{project.stats.runs}</td>
+              <td>{project.stats.running}</td>
+              <td>{project.latestRun}</td>
+              <td>
+                <div className="tag-row">
+                  {project.tags.map((tag) => (
+                    <span className="tag" key={tag}>{tag}</span>
+                  ))}
+                </div>
+              </td>
+              <td><ActionMenu /></td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>

@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import { Download } from 'lucide-react'
-import { Button } from '../common/Button.jsx'
-import { EmptyState } from '../common/EmptyState.jsx'
-import { IconButton } from '../common/IconButton.jsx'
-import { JsonPreview } from '../common/JsonPreview.jsx'
-import { SearchInput } from '../common/SearchInput.jsx'
-import { Toolbar } from '../common/Toolbar.jsx'
+import { Button } from '@/components/common/Button.jsx'
+import { EmptyState } from '@/components/common/EmptyState.jsx'
+import { IconButton } from '@/components/common/IconButton.jsx'
+import { JsonPreview } from '@/components/common/JsonPreview.jsx'
+import { SearchInput } from '@/components/common/SearchInput.jsx'
+import { Toolbar } from '@/components/common/Toolbar.jsx'
 
 export function ArtifactList({ artifacts }) {
   const [query, setQuery] = useState('')
