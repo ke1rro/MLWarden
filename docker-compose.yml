@@ -1,36 +1,14 @@
 services:
   backend:
     build:
-      context: mlwarden/backend
-      dockerfile: Dockerfile
-    environment:
-      APP_ENV: ${APP_ENV:-production}
-      APP_SECRET_KEY: ${APP_SECRET_KEY:-change-me}
-      APP_USERS: ${APP_USERS:-admin:password}
-      APP_API_KEY: ${APP_API_KEY:-dev-api-key}
-      APP_DATABASE_URL: sqlite:////data/mlwarden.sqlite3
-      APP_ARTIFACT_ROOT: /data/artifacts
-      APP_MAX_UPLOAD_MB: ${APP_MAX_UPLOAD_MB:-512}
-      APP_CORS_ORIGINS: ${APP_CORS_ORIGINS:-http://localhost:5173}
-      APP_AUTH_TOKEN_TTL_MINUTES: ${APP_AUTH_TOKEN_TTL_MINUTES:-1440}
-      APP_ALLOW_PROJECT_DELETE: ${APP_ALLOW_PROJECT_DELETE:-true}
-      APP_ALLOW_RUN_DELETE: ${APP_ALLOW_RUN_DELETE:-false}
+      context: .
+      dockerfile: mlwarden/backend/Dockerfile
+    env_file:
+      - .env
     ports:
       - "8000:8000"
     volumes:
       - backend-data:/data
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "python",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3).read()",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
 
 volumes:
   backend-data:
