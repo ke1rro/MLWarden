@@ -12,13 +12,13 @@ export default function OfflinePage() {
         </div>
         <h1>Connection unavailable</h1>
         <p>
-          MLWarden is currently showing prototype data. In the real app this page can be used
-          when the backend or WebSocket stream is unavailable.
+          MLWarden cannot reach the backend or WebSocket stream right now. Check the
+          backend service and try again.
         </p>
         <div className="system-actions">
           <Link className="button button-primary button-md" to="/projects">
             <FolderKanban size={16} />
-            Continue with mock data
+            Retry workspace
           </Link>
         </div>
       </section>

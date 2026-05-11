@@ -75,6 +75,14 @@
   text-align: left;
 }
 
+.image-card img {
+  aspect-ratio: 1 / 1;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  width: 100%;
+}
+
 .image-card small,
 .image-card p {
   color: var(--color-muted);
@@ -132,6 +140,27 @@
   max-width: 720px;
   padding: var(--space-4);
   width: 100%;
+}
+
+.image-modal img {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  max-height: 60vh;
+  object-fit: contain;
+  width: 100%;
+}
+
+.saved-chart-list {
+  border-top: 1px solid var(--color-border);
+  color: var(--color-muted);
+  display: grid;
+  font-size: 12px;
+  gap: var(--space-1);
+  padding-top: var(--space-3);
+}
+
+.saved-chart-list strong {
+  color: var(--color-text);
 }
 
 .event-timeline {

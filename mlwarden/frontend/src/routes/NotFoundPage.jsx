@@ -13,7 +13,7 @@ export default function NotFoundPage() {
         <div className="system-code">404</div>
         <h1>Route not found</h1>
         <p>
-          This prototype does not have that workspace route. Check the path, return to projects,
+          MLWarden does not have that workspace route. Check the path, return to projects,
           or go back to the previous screen.
         </p>
         <div className="system-actions">

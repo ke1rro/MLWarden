@@ -24,7 +24,7 @@ export function NotificationHistory({ onClose }) {
       <header className="notification-popover-header">
         <div>
           <h2>Notification history</h2>
-          <p>Recent run and connection events from this prototype session.</p>
+          <p>Recent run and connection events from the backend.</p>
         </div>
         <Button onClick={handleMarkRead} variant="secondary">
           <CheckCheck size={15} />

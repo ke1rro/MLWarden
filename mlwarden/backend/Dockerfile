@@ -16,10 +16,9 @@ ENV APP_ENV=production
 ENV APP_DATABASE_URL=sqlite:////data/mlwarden.sqlite3
 ENV APP_ARTIFACT_ROOT=/data/artifacts
 ENV APP_MAX_UPLOAD_MB=512
-ENV APP_CORS_ORIGINS=http://localhost:5173
+ENV APP_CORS_ORIGINS=http://localhost:5173,http://localhost:5174
 ENV APP_AUTH_TOKEN_TTL_MINUTES=1440
 
 EXPOSE 8000
 
 CMD ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000", "--app-dir", "mlwarden/backend"]
-

@@ -1,4 +1,4 @@
-export function LoadingState({ message = 'Loading prototype data...' }) {
+export function LoadingState({ message = 'Loading backend data...' }) {
   return (
     <div className="state-box">
       <span className="spinner" />

@@ -29,7 +29,7 @@ export function ProjectTable({ projects }) {
                   {project.name}
                 </Link>
               </td>
-              <td className="muted-cell">{project.description}</td>
+              <td className="muted-cell">{project.description || 'n/a'}</td>
               <td>{project.stats.runs}</td>
               <td>{project.stats.running}</td>
               <td>{project.latestRun}</td>

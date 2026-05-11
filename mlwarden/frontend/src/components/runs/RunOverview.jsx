@@ -1,18 +1,7 @@
 import { MetricCard } from '@/components/common/MetricCard.jsx'
 import { JsonPreview } from '@/components/common/JsonPreview.jsx'
 
-export function RunOverview({ run, metricSeries }) {
-  const summaries = Object.entries(metricSeries).slice(0, 5).map(([name, points]) => {
-    const values = points.map((point) => point.value)
-    return {
-      name,
-      latest: values.at(-1),
-      min: Math.min(...values),
-      max: Math.max(...values),
-      count: values.length,
-    }
-  })
-
+export function RunOverview({ run, metricSummaries }) {
   return (
     <div className="overview-grid">
       <section className="panel">
@@ -44,7 +33,7 @@ export function RunOverview({ run, metricSeries }) {
               <tr><th>Metric</th><th>Latest</th><th>Min</th><th>Max</th><th>Count</th></tr>
             </thead>
             <tbody>
-              {summaries.map((summary) => (
+              {metricSummaries.map((summary) => (
                 <tr key={summary.name}>
                   <td>{summary.name}</td>
                   <td>{summary.latest}</td>

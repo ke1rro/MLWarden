@@ -170,6 +170,44 @@
   gap: var(--space-2);
 }
 
+.inline-form {
+  align-items: end;
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.inline-form label {
+  color: var(--color-muted);
+  display: grid;
+  font-size: 12px;
+  font-weight: 650;
+  gap: var(--space-1);
+}
+
+.inline-form input {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  min-height: 34px;
+  padding: 7px 10px;
+}
+
+.inline-form .form-error {
+  align-self: stretch;
+}
+
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.run-actions {
+  margin-left: auto;
+}
+
 .panel {
   background: var(--color-panel);
   border: 1px solid var(--color-border);
