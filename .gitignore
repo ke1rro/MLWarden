@@ -284,3 +284,5 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+/mlwarden.sqlite3*

@@ -1,6 +1,10 @@
-fastapi[standard]
+fastapi
+uvicorn[standard]
+python-multipart
+httpx
 pydantic
 pip-tools
 pre-commit
 isort
 black
+pytest
