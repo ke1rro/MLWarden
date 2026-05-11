@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useReducer } from 'react'
-import { notifications as initialNotifications } from '../mockData.js'
+import { trackerApi } from '@/api/TrackerApi.js'
 import { NotificationsContext } from './notificationsContext.js'
 
 const NOTIFICATIONS_STORAGE_KEY = 'mlwarden.notifications'
 
 function createInitialNotifications() {
-  return initialNotifications.map((notification) => ({
+  return trackerApi.listNotifications().map((notification) => ({
     ...notification,
     readAt: null,
     dismissedAt: null,

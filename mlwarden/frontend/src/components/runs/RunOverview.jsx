@@ -1,5 +1,5 @@
-import { MetricCard } from '../common/MetricCard.jsx'
-import { JsonPreview } from '../common/JsonPreview.jsx'
+import { MetricCard } from '@/components/common/MetricCard.jsx'
+import { JsonPreview } from '@/components/common/JsonPreview.jsx'
 
 export function RunOverview({ run, metricSeries }) {
   const summaries = Object.entries(metricSeries).slice(0, 5).map(([name, points]) => {

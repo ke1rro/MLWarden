@@ -1,24 +1,15 @@
 import { Navigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArtifactList } from '../components/artifacts/ArtifactList.jsx'
-import { Tabs } from '../components/common/Tabs.jsx'
-import { EventTimeline } from '../components/events/EventTimeline.jsx'
-import { ImageGallery } from '../components/images/ImageGallery.jsx'
-import { AppLayout } from '../components/layout/AppLayout.jsx'
-import { LogViewer } from '../components/logs/LogViewer.jsx'
-import { RunChartsWorkspace } from '../components/runs/RunChartsWorkspace.jsx'
-import { RunHeader } from '../components/runs/RunHeader.jsx'
-import { RunOverview } from '../components/runs/RunOverview.jsx'
-import { DataTable } from '../components/tables/DataTable.jsx'
-import {
-  artifactsByRunId,
-  eventsByRunId,
-  getProject,
-  getRun,
-  imagesByRunId,
-  logsByRunId,
-  metricSeriesByRunId,
-  tablesByRunId,
-} from '../mockData.js'
+import { ArtifactList } from '@/components/artifacts/ArtifactList.jsx'
+import { Tabs } from '@/components/common/Tabs.jsx'
+import { EventTimeline } from '@/components/events/EventTimeline.jsx'
+import { ImageGallery } from '@/components/images/ImageGallery.jsx'
+import { AppLayout } from '@/components/layout/AppLayout.jsx'
+import { LogViewer } from '@/components/logs/LogViewer.jsx'
+import { RunChartsWorkspace } from '@/components/runs/RunChartsWorkspace.jsx'
+import { RunHeader } from '@/components/runs/RunHeader.jsx'
+import { RunOverview } from '@/components/runs/RunOverview.jsx'
+import { DataTable } from '@/components/tables/DataTable.jsx'
+import { trackerApi } from '@/api/TrackerApi.js'
 
 const tabs = [
   { id: 'charts', label: 'Charts' },
@@ -33,23 +24,22 @@ const tabs = [
 export default function RunDetailPage() {
   const { runId } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
-  const run = getRun(runId)
+  const workspace = trackerApi.getRunWorkspace(runId)
 
-  if (!run) {
+  if (!workspace) {
     return <Navigate to="/projects" replace />
   }
 
-  const project = getProject(run.projectId)
+  const { artifacts, events, images, logs, metricSeries, project, run, tables } = workspace
   const activeTab = searchParams.get('tab') || 'charts'
-  const metricSeries = metricSeriesByRunId[run.id] || {}
 
   function renderTab() {
     if (activeTab === 'overview') return <RunOverview run={run} metricSeries={metricSeries} />
-    if (activeTab === 'logs') return <LogViewer logs={logsByRunId[run.id] || []} />
-    if (activeTab === 'tables') return <DataTable tables={tablesByRunId[run.id] || []} />
-    if (activeTab === 'images') return <ImageGallery images={imagesByRunId[run.id] || []} />
-    if (activeTab === 'artifacts') return <ArtifactList artifacts={artifactsByRunId[run.id] || []} />
-    if (activeTab === 'events') return <EventTimeline events={eventsByRunId[run.id] || []} />
+    if (activeTab === 'logs') return <LogViewer logs={logs} />
+    if (activeTab === 'tables') return <DataTable tables={tables} />
+    if (activeTab === 'images') return <ImageGallery images={images} />
+    if (activeTab === 'artifacts') return <ArtifactList artifacts={artifacts} />
+    if (activeTab === 'events') return <EventTimeline events={events} />
     return <RunChartsWorkspace metricSeries={metricSeries} />
   }
 

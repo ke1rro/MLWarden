@@ -1,11 +1,11 @@
 import { Bell, CircleHelp, Search } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { useAuth } from '../../app/useAuth.js'
-import { useNotifications } from '../../app/useNotifications.js'
+import { useAuth } from '@/app/useAuth.js'
+import { useNotifications } from '@/app/useNotifications.js'
 import { Breadcrumbs } from './Breadcrumbs.jsx'
-import { IconButton } from '../common/IconButton.jsx'
-import { Logo } from '../common/Logo.jsx'
-import { NotificationHistory } from '../notifications/NotificationHistory.jsx'
+import { IconButton } from '@/components/common/IconButton.jsx'
+import { Logo } from '@/components/common/Logo.jsx'
+import { NotificationHistory } from '@/components/notifications/NotificationHistory.jsx'
 
 export function TopBar({ breadcrumbs }) {
   const { user, logout } = useAuth()

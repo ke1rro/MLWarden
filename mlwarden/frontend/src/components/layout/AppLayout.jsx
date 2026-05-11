@@ -1,7 +1,6 @@
-import { Outlet } from 'react-router-dom'
 import { SidebarNav } from './SidebarNav.jsx'
 import { TopBar } from './TopBar.jsx'
-import { ToastHost } from '../notifications/ToastHost.jsx'
+import { ToastHost } from '@/components/notifications/ToastHost.jsx'
 
 export function AppLayout({ breadcrumbs, children }) {
   return (
@@ -10,7 +9,7 @@ export function AppLayout({ breadcrumbs, children }) {
       <div className="app-body">
         <SidebarNav />
         <main className="workspace">
-          {children || <Outlet />}
+          {children}
         </main>
       </div>
       <ToastHost />

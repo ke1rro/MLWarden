@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
-import { ActionMenu } from '../common/ActionMenu.jsx'
-import { EmptyState } from '../common/EmptyState.jsx'
-import { StatusBadge } from '../common/StatusBadge.jsx'
+import { ActionMenu } from '@/components/common/ActionMenu.jsx'
+import { EmptyState } from '@/components/common/EmptyState.jsx'
+import { StatusBadge } from '@/components/common/StatusBadge.jsx'
 
 export function RunTable({ runs }) {
   if (!runs.length) {

@@ -1,21 +1,23 @@
 import { Navigate, useParams } from 'react-router-dom'
-import { ChartBuilder } from '../components/charts/ChartBuilder.jsx'
-import { PageHeader } from '../components/common/PageHeader.jsx'
-import { AppLayout } from '../components/layout/AppLayout.jsx'
-import { getProject, getRunsForProject, metricSeriesByRunId } from '../mockData.js'
+import { ChartBuilder } from '@/components/charts/ChartBuilder.jsx'
+import { PageHeader } from '@/components/common/PageHeader.jsx'
+import { AppLayout } from '@/components/layout/AppLayout.jsx'
+import { trackerApi } from '@/api/TrackerApi.js'
 
 export default function ChartsPage() {
   const { projectId } = useParams()
-  const project = getProject(projectId)
+  const workspace = trackerApi.getChartsWorkspace(projectId)
 
-  if (!project) {
+  if (!workspace) {
     return <Navigate to="/projects" replace />
   }
+
+  const { project, runs, metricSeries } = workspace
 
   return (
     <AppLayout breadcrumbs={['MLWarden', 'Projects', project.name, 'Charts']}>
       <PageHeader title="Charts" subtitle="Build saved project charts from metrics, params, metadata, tables, and events." />
-      <ChartBuilder project={project} runs={getRunsForProject(project.id)} metricSeries={metricSeriesByRunId} />
+      <ChartBuilder project={project} runs={runs} metricSeries={metricSeries} />
     </AppLayout>
   )
 }

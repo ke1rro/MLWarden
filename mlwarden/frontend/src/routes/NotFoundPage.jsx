@@ -1,7 +1,7 @@
 import { ArrowLeft, FolderKanban, Search } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Button } from '../components/common/Button.jsx'
-import { Logo } from '../components/common/Logo.jsx'
+import { Button } from '@/components/common/Button.jsx'
+import { Logo } from '@/components/common/Logo.jsx'
 
 export default function NotFoundPage() {
   const navigate = useNavigate()

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
-import { EmptyState } from '../common/EmptyState.jsx'
-import { ErrorState } from '../common/ErrorState.jsx'
+import { EmptyState } from '@/components/common/EmptyState.jsx'
+import { ErrorState } from '@/components/common/ErrorState.jsx'
 
 const axisLabel = {
   color: '#475467',

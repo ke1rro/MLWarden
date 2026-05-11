@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Button } from '../common/Button.jsx'
-import { JsonPreview } from '../common/JsonPreview.jsx'
-import { EmptyState } from '../common/EmptyState.jsx'
+import { Button } from '@/components/common/Button.jsx'
+import { JsonPreview } from '@/components/common/JsonPreview.jsx'
+import { EmptyState } from '@/components/common/EmptyState.jsx'
 
 const pageSize = 3
 

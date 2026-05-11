@@ -1,7 +1,7 @@
 import { ArrowRight, BarChart3, Boxes, LineChart, ShieldCheck, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { Logo } from '../components/common/Logo.jsx'
-import { ShaderAnimation } from '../components/ui/ShaderAnimation.jsx'
+import { Logo } from '@/components/common/Logo.jsx'
+import { ShaderAnimation } from '@/components/ui/ShaderAnimation.jsx'
 
 const metrics = [
   ['8.4k', 'metric points'],

@@ -1,7 +1,7 @@
 import { ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { StatusBadge } from '../common/StatusBadge.jsx'
-import { ActionMenu } from '../common/ActionMenu.jsx'
+import { StatusBadge } from '@/components/common/StatusBadge.jsx'
+import { ActionMenu } from '@/components/common/ActionMenu.jsx'
 
 export function RunHeader({ project, run }) {
   return (

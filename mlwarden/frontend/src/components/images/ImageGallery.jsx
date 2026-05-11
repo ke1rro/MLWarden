@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
-import { Button } from '../common/Button.jsx'
-import { EmptyState } from '../common/EmptyState.jsx'
-import { JsonPreview } from '../common/JsonPreview.jsx'
-import { SearchInput } from '../common/SearchInput.jsx'
-import { Toolbar } from '../common/Toolbar.jsx'
+import { Button } from '@/components/common/Button.jsx'
+import { EmptyState } from '@/components/common/EmptyState.jsx'
+import { JsonPreview } from '@/components/common/JsonPreview.jsx'
+import { SearchInput } from '@/components/common/SearchInput.jsx'
+import { Toolbar } from '@/components/common/Toolbar.jsx'
 
 export function ImageGallery({ images }) {
   const [query, setQuery] = useState('')

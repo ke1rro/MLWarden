@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Button } from '../common/Button.jsx'
+import { Button } from '@/components/common/Button.jsx'
 import { MetricChart } from './MetricChart.jsx'
 import { PanelCard } from './PanelCard.jsx'
 
