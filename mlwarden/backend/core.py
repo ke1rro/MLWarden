@@ -46,6 +46,7 @@ class Settings:
     api_key: str | None
     database_url: str
     artifact_root: Path
+    static_frontend_path: Path | None
     max_upload_mb: int
     cors_origins: list[str]
     token_ttl_minutes: int
@@ -119,15 +120,23 @@ def parse_users(raw: str) -> dict[str, str]:
     return users
 
 
+def parse_optional_path(value: str | None) -> Path | None:
+    if value is None:
+        return None
+    value = value.strip()
+    if not value:
+        return None
+    return Path(value).expanduser().resolve()
+
+
 def load_settings() -> Settings:
     env = os.environ.get("APP_ENV", "development")
     database_url = os.environ.get("APP_DATABASE_URL", "sqlite:///./mlwarden.sqlite3")
     artifact_root = Path(os.environ.get("APP_ARTIFACT_ROOT", "./artifacts")).resolve()
+    static_frontend_path = parse_optional_path(os.environ.get("APP_STATIC_FRONTEND_PATH"))
     cors_origins = [
         origin.strip()
-        for origin in os.environ.get(
-            "APP_CORS_ORIGINS", ",".join(DEV_CORS_ORIGINS[:2])
-        ).split(",")
+        for origin in os.environ.get("APP_CORS_ORIGINS", ",".join(DEV_CORS_ORIGINS[:2])).split(",")
         if origin.strip()
     ]
     if env == "development":
@@ -139,12 +148,11 @@ def load_settings() -> Settings:
         api_key=os.environ.get("APP_API_KEY"),
         database_url=database_url,
         artifact_root=artifact_root,
+        static_frontend_path=static_frontend_path,
         max_upload_mb=int(os.environ.get("APP_MAX_UPLOAD_MB", "512")),
         cors_origins=cors_origins,
         token_ttl_minutes=int(os.environ.get("APP_AUTH_TOKEN_TTL_MINUTES", "1440")),
-        allow_project_delete=parse_bool(
-            os.environ.get("APP_ALLOW_PROJECT_DELETE"), False
-        ),
+        allow_project_delete=parse_bool(os.environ.get("APP_ALLOW_PROJECT_DELETE"), False),
         allow_run_delete=parse_bool(os.environ.get("APP_ALLOW_RUN_DELETE"), False),
     )
 
@@ -344,9 +352,7 @@ def decode_row(table: str, row: dict[str, Any] | None) -> dict[str, Any] | None:
         return None
     decoded = dict(row)
     for field in JSON_FIELDS.get(table, set()):
-        decoded[field] = json_loads(
-            decoded.get(field), [] if field in {"tags", "columns"} else {}
-        )
+        decoded[field] = json_loads(decoded.get(field), [] if field in {"tags", "columns"} else {})
     return decoded
 
 
@@ -398,9 +404,7 @@ def b64decode(data: str) -> bytes:
 
 
 def sign_token(payload_b64: str) -> str:
-    digest = hmac.new(
-        settings.secret_key.encode(), payload_b64.encode(), hashlib.sha256
-    ).digest()
+    digest = hmac.new(settings.secret_key.encode(), payload_b64.encode(), hashlib.sha256).digest()
     return b64encode(digest)
 
 
@@ -485,9 +489,7 @@ def principal_from_ws_token(token: str | None) -> Principal:
     return Principal(username=username, kind="user", is_admin=username == "admin")
 
 
-def error_payload(
-    code: str, message: str, details: dict[str, Any] | None = None
-) -> dict[str, Any]:
+def error_payload(code: str, message: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
     return {"error": {"code": code, "message": message, "details": details or {}}}
 
 
@@ -505,9 +507,7 @@ class ConnectionManager:
 
     async def disconnect(self, websocket: WebSocket) -> None:
         with self._lock:
-            self._connections = [
-                item for item in self._connections if item[0] is not websocket
-            ]
+            self._connections = [item for item in self._connections if item[0] is not websocket]
 
     async def broadcast(self, message: dict[str, Any]) -> None:
         with self._lock:
@@ -561,9 +561,7 @@ async def create_event(
     return event
 
 
-def get_project_or_404(
-    project_id: str, include_deleted: bool = False
-) -> dict[str, Any]:
+def get_project_or_404(project_id: str, include_deleted: bool = False) -> dict[str, Any]:
     from .database import get_project_row
 
     project = get_project_row(project_id)
@@ -601,9 +599,7 @@ def validate_artifact_path(path: str | None) -> str | None:
         return None
     candidate = PurePosixPath(path)
     if candidate.is_absolute() or any(part in {"..", ""} for part in candidate.parts):
-        raise ApiError(
-            400, "unsafe_artifact_path", "Artifact path must be relative and safe"
-        )
+        raise ApiError(400, "unsafe_artifact_path", "Artifact path must be relative and safe")
     return str(candidate)
 
 
@@ -632,17 +628,13 @@ def resolve_storage_path(storage_path: str) -> Path:
     return full_path
 
 
-def image_dimensions(
-    content_type: str, content: bytes
-) -> tuple[int | None, int | None]:
+def image_dimensions(content_type: str, content: bytes) -> tuple[int | None, int | None]:
     if (
         content_type == "image/png"
         and len(content) >= 24
         and content.startswith(b"\x89PNG\r\n\x1a\n")
     ):
-        return int.from_bytes(content[16:20], "big"), int.from_bytes(
-            content[20:24], "big"
-        )
+        return int.from_bytes(content[16:20], "big"), int.from_bytes(content[20:24], "big")
     return None, None
 
 
@@ -650,9 +642,7 @@ async def read_upload_bytes(file: UploadFile) -> bytes:
     content = await file.read()
     max_bytes = settings.max_upload_mb * 1024 * 1024
     if len(content) > max_bytes:
-        raise ApiError(
-            413, "upload_too_large", f"Upload exceeds {settings.max_upload_mb} MB limit"
-        )
+        raise ApiError(413, "upload_too_large", f"Upload exceeds {settings.max_upload_mb} MB limit")
     return content
 
 
@@ -682,9 +672,7 @@ def metric_response(metric: dict[str, Any]) -> dict[str, Any]:
     return metric
 
 
-def normalize_limit_offset(
-    limit: int, offset: int, max_limit: int = 500
-) -> tuple[int, int]:
+def normalize_limit_offset(limit: int, offset: int, max_limit: int = 500) -> tuple[int, int]:
     return max(1, min(limit, max_limit)), max(0, offset)
 
 
@@ -707,9 +695,7 @@ async def update_run_status(
         )
     now = utc_timestamp()
     started_at = (
-        now
-        if new_status == "running" and not run.get("started_at")
-        else run.get("started_at")
+        now if new_status == "running" and not run.get("started_at") else run.get("started_at")
     )
     finished_at = now if new_status in TERMINAL_RUN_STATUSES else run.get("finished_at")
     merged_summary = {**require_dict(run.get("summary"), "summary"), **(summary or {})}
@@ -731,9 +717,7 @@ async def update_run_status(
         "project_name": project["name"],
         **(event_payload or {}),
     }
-    await create_event(
-        event_type, project_id=updated["project_id"], run_id=run_id, payload=payload
-    )
+    await create_event(event_type, project_id=updated["project_id"], run_id=run_id, payload=payload)
     if new_status in TERMINAL_RUN_STATUSES:
         await create_event(
             "notification.created",
