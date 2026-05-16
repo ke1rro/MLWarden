@@ -36,12 +36,25 @@
   box-sizing: border-box;
 }
 
+html {
+  background: var(--color-bg);
+  min-height: 100%;
+  overscroll-behavior-y: none;
+}
+
 body {
   margin: 0;
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
   font-size: 14px;
+  min-height: 100vh;
+  overscroll-behavior-y: none;
+}
+
+#root {
+  background: var(--color-bg);
+  min-height: 100vh;
 }
 
 a {

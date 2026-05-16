@@ -23,6 +23,7 @@ import { cancelRun, failRun, finishRun, getRun, startRun } from '@/api/runs.js'
 import { getTable, listTables } from '@/api/tables.js'
 import { useNotifications } from '@/app/useNotifications.js'
 import { ArtifactList } from '@/components/artifacts/ArtifactList.jsx'
+import { EmptyState } from '@/components/common/EmptyState.jsx'
 import { ErrorState } from '@/components/common/ErrorState.jsx'
 import { LoadingState } from '@/components/common/LoadingState.jsx'
 import { Tabs } from '@/components/common/Tabs.jsx'
@@ -58,11 +59,11 @@ export default function RunDetailPage() {
   const [artifacts, setArtifacts] = useState([])
   const [events, setEvents] = useState([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(null)
   const { subscribe } = useNotifications()
 
   const loadRunWorkspace = useCallback(async () => {
-    setError('')
+    setError(null)
     try {
       const runResponse = await getRun(runId)
       const [
@@ -100,7 +101,7 @@ export default function RunDetailPage() {
       setArtifacts((artifactsResponse.items || []).map(adaptArtifact))
       setEvents((eventsResponse.items || []).map(adaptEvent))
     } catch (err) {
-      setError(err.message || 'Failed to load run.')
+      setError(err)
     } finally {
       setIsLoading(false)
     }
@@ -119,7 +120,7 @@ export default function RunDetailPage() {
   }), [loadRunWorkspace, runId, subscribe])
 
   async function handleRunAction(action) {
-    setError('')
+    setError(null)
     try {
       if (action === 'start') await startRun(runId)
       if (action === 'finish') await finishRun(runId)
@@ -127,7 +128,7 @@ export default function RunDetailPage() {
       if (action === 'cancel') await cancelRun(runId)
       await loadRunWorkspace()
     } catch (err) {
-      setError(err.message || 'Run action failed.')
+      setError(err)
     }
   }
 
@@ -160,12 +161,12 @@ export default function RunDetailPage() {
     if (activeTab === 'images') return <ImageGallery getImageUrl={getImageFileUrl} images={images} onUpload={handleImageUpload} />
     if (activeTab === 'artifacts') return <ArtifactList artifacts={artifacts} onDownload={handleArtifactDownload} onUpload={handleArtifactUpload} />
     if (activeTab === 'events') return <EventTimeline events={events} />
-    return <RunChartsWorkspace metricSeries={metricSeries} />
+    return <RunChartsWorkspace metricSeries={metricSeries} metricSummaries={metricSummaries} project={project} run={run} />
   }
 
   if (isLoading) {
     return (
-      <AppLayout breadcrumbs={['MLWarden', 'Runs']}>
+      <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'Runs', to: '/runs' }]}>
         <LoadingState message="Loading run..." />
       </AppLayout>
     )
@@ -173,8 +174,8 @@ export default function RunDetailPage() {
 
   if (!run && error) {
     return (
-      <AppLayout breadcrumbs={['MLWarden', 'Runs']}>
-        <ErrorState message={error} />
+      <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'Runs', to: '/runs' }]}>
+        <EmptyState title="Run not found." message="Choose an existing run from the runs page or create one from a project workspace." />
       </AppLayout>
     )
   }
@@ -184,9 +185,9 @@ export default function RunDetailPage() {
   }
 
   return (
-    <AppLayout breadcrumbs={['MLWarden', 'Projects', project.name, 'Runs', run.name]}>
+    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: project.name, to: `/projects/${project.id}` }, { label: run.name }]}>
       <RunHeader onRunAction={handleRunAction} project={project} run={run} />
-      {error ? <ErrorState message={error} /> : null}
+      {error ? <ErrorState message={error.message || 'Run action failed.'} /> : null}
       <Tabs tabs={tabs} activeTab={activeTab} onChange={(tab) => setSearchParams(tab === 'charts' ? {} : { tab })} />
       {renderTab()}
     </AppLayout>

@@ -11,6 +11,7 @@ import { Button } from '@/components/common/Button.jsx'
 import { ErrorState } from '@/components/common/ErrorState.jsx'
 import { LoadingState } from '@/components/common/LoadingState.jsx'
 import { MetricCard } from '@/components/common/MetricCard.jsx'
+import { Modal } from '@/components/common/Modal.jsx'
 import { PageHeader } from '@/components/common/PageHeader.jsx'
 import { SearchInput } from '@/components/common/SearchInput.jsx'
 import { Toolbar } from '@/components/common/Toolbar.jsx'
@@ -85,13 +86,15 @@ function SavedChartsSection({ project, savedCharts, previewSeries }) {
       <header className="section-header">
         <div>
           <h2>Saved charts</h2>
-          <p>Project-level chart configurations with mock preview data.</p>
+          <p>Project-level chart configurations with preview data from the latest run.</p>
         </div>
         <Link className="button button-secondary button-md" to={`/projects/${project.id}/charts`}>Chart builder</Link>
       </header>
       <div className="chart-grid compact-grid">
         {savedCharts.map((chart) => (
-          <SavedChartPanel chart={chart} key={chart.id} previewSeries={previewSeries} />
+          <div data-search-text={`${chart.name} ${project.name}`} key={chart.id}>
+            <SavedChartPanel chart={chart} previewSeries={previewSeries} />
+          </div>
         ))}
       </div>
     </section>
@@ -110,6 +113,7 @@ export default function ProjectDetailPage() {
   const [status, setStatus] = useState('all')
   const [tag, setTag] = useState('all')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [runForm, setRunForm] = useState({ name: '', description: '', tags: '' })
   const { subscribe } = useNotifications()
@@ -212,8 +216,8 @@ export default function ProjectDetailPage() {
 
   if (!project && error) {
     return (
-      <AppLayout breadcrumbs={['MLWarden', 'Projects']}>
-        <ErrorState message={error} />
+      <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'Projects', to: '/projects' }]}>
+        <ErrorState title="Project not available" message={error} />
       </AppLayout>
     )
   }
@@ -223,7 +227,7 @@ export default function ProjectDetailPage() {
   }
 
   return (
-    <AppLayout breadcrumbs={['MLWarden', 'Projects', project.name]}>
+    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: project.name }]}>
       <PageHeader
         title={project.name}
         subtitle={project.description}
@@ -231,7 +235,7 @@ export default function ProjectDetailPage() {
           <>
             <Button onClick={() => setIsCreateOpen((current) => !current)}><Plus size={15} /> New run</Button>
             <Link className="button button-secondary button-md" to={`/projects/${project.id}/charts`}>Open charts</Link>
-            <Button variant="secondary"><Settings size={15} /> Settings</Button>
+            <Button onClick={() => setIsSettingsOpen(true)} variant="secondary"><Settings size={15} /> Settings</Button>
           </>
         )}
       />
@@ -269,6 +273,24 @@ export default function ProjectDetailPage() {
       />
       <RunTable runs={filteredRuns} onRunAction={handleRunAction} />
       <SavedChartsSection project={project} savedCharts={savedCharts} previewSeries={previewSeries} />
+      {isSettingsOpen ? (
+        <Modal title={`${project.name} settings`} description="Project metadata and local display settings." onClose={() => setIsSettingsOpen(false)}>
+          <div className="settings-form-grid">
+            <label>
+              Project name
+              <input readOnly value={project.name} />
+            </label>
+            <label>
+              Description
+              <textarea readOnly value={project.description || ''} rows={3} />
+            </label>
+            <label>
+              Tags
+              <input readOnly value={project.tags.join(', ')} />
+            </label>
+          </div>
+        </Modal>
+      ) : null}
     </AppLayout>
   )
 }

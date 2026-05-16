@@ -1,6 +1,7 @@
 .chart-grid {
   display: grid;
   gap: var(--space-3);
+  grid-auto-flow: dense;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
@@ -17,6 +18,31 @@
   min-height: 260px;
   min-width: 0;
   padding: var(--space-3);
+}
+
+.chart-panel[draggable="true"] {
+  cursor: grab;
+}
+
+.chart-panel[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.chart-panel-sm {
+  min-height: 220px;
+}
+
+.chart-panel-sm .metric-chart {
+  height: 170px;
+}
+
+.chart-panel-lg {
+  grid-column: span 2;
+  min-height: 340px;
+}
+
+.chart-panel-lg .metric-chart {
+  height: 290px;
 }
 
 .chart-panel-header {

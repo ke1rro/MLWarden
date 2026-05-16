@@ -31,7 +31,7 @@ The PyTorch demo requires `torch`. TensorFlow is optional for the full seed proc
 ## Seed Real Data
 
 ```bash
-python examples/seed_real_demo_data.py \
+scripts/load_data.sh \
   --base-url http://localhost:8000 \
   --api-key dev-api-key \
   --project demo-pytorch-tensorflow
@@ -43,7 +43,7 @@ The same values can come from environment variables:
 export MINI_TRACKER_URL=http://localhost:8000
 export MINI_TRACKER_API_KEY=dev-api-key
 export MINI_TRACKER_PROJECT=demo-pytorch-tensorflow
-python examples/seed_real_demo_data.py
+scripts/load_data.sh
 ```
 
 Generated local files are written under `examples/outputs/` and uploaded through the SDK.

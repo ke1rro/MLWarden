@@ -28,7 +28,7 @@ export default function NotFoundPage() {
         </div>
         <div className="system-hint">
           <Search size={15} />
-          Try `/projects`, `/runs/run-dulcet-snowflake-18`, or `/settings`.
+          Try `/projects`, `/workspace`, `/runs`, `/charts`, or `/settings`.
         </div>
       </section>
     </main>

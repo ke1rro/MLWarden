@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/common/Button.jsx'
 import { EmptyState } from '@/components/common/EmptyState.jsx'
 import { JsonPreview } from '@/components/common/JsonPreview.jsx'
@@ -13,12 +13,22 @@ function ImageUploadForm({ onUpload }) {
   const [metadata, setMetadata] = useState('')
   const [error, setError] = useState('')
   const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef(null)
 
   async function handleSubmit(event) {
     event.preventDefault()
+    const formElement = event.currentTarget
     setError('')
     if (!file) {
       setError('Choose an image file.')
+      return
+    }
+
+    let parsedMetadata
+    try {
+      parsedMetadata = metadata.trim() ? JSON.parse(metadata) : undefined
+    } catch {
+      setError('Metadata is not valid JSON.')
       return
     }
 
@@ -29,14 +39,15 @@ function ImageUploadForm({ onUpload }) {
         name,
         step,
         caption,
-        metadata: metadata.trim() ? JSON.parse(metadata) : undefined,
+        metadata: parsedMetadata,
       })
       setFile(null)
       setName('')
       setStep('')
       setCaption('')
       setMetadata('')
-      event.currentTarget.reset()
+      formElement.reset()
+      if (fileInputRef.current) fileInputRef.current.value = ''
     } catch (err) {
       setError(err.message || 'Image upload failed.')
     } finally {
@@ -48,7 +59,7 @@ function ImageUploadForm({ onUpload }) {
     <form className="panel inline-form" onSubmit={handleSubmit}>
       <label>
         File
-        <input accept="image/png,image/jpeg,image/webp" onChange={(event) => setFile(event.target.files?.[0] || null)} type="file" />
+        <input ref={fileInputRef} accept="image/png,image/jpeg,image/webp" onChange={(event) => setFile(event.target.files?.[0] || null)} type="file" />
       </label>
       <label>
         Name
@@ -131,7 +142,7 @@ export function ImageGallery({ images, getImageUrl, onUpload }) {
       {!images.length ? <EmptyState title="No images uploaded." message="Input previews, reconstructions, and masks will appear here." /> : null}
       <div className="image-grid">
         {filteredImages.map((image, index) => (
-          <button className="image-card" key={image.id} onClick={() => setSelectedImage(image)} type="button">
+          <button className="image-card" data-search-text={`${image.name} ${image.caption} ${image.step} ${image.split}`} key={image.id} onClick={() => setSelectedImage(image)} type="button">
             {imageUrls[image.id] ? <img alt={image.name} src={imageUrls[image.id]} /> : <span className={`image-placeholder image-${index % 4}`} />}
             <strong>{image.name}</strong>
             <small>step {image.step} · {image.size}</small>

@@ -82,7 +82,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <AppLayout breadcrumbs={['MLWarden', 'Projects']}>
+    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'Projects' }]}>
       <PageHeader
         title="Projects"
         subtitle="Track experiment runs, metrics, artifacts, and workflow outputs."

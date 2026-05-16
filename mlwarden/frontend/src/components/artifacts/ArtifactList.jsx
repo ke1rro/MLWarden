@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Download } from 'lucide-react'
 import { Button } from '@/components/common/Button.jsx'
 import { EmptyState } from '@/components/common/EmptyState.jsx'
-import { JsonPreview } from '@/components/common/JsonPreview.jsx'
+import { MetadataModal } from '@/components/common/MetadataModal.jsx'
 import { SearchInput } from '@/components/common/SearchInput.jsx'
 import { Toolbar } from '@/components/common/Toolbar.jsx'
 
@@ -13,12 +13,22 @@ function ArtifactUploadForm({ onUpload }) {
   const [metadata, setMetadata] = useState('')
   const [error, setError] = useState('')
   const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef(null)
 
   async function handleSubmit(event) {
     event.preventDefault()
+    const formElement = event.currentTarget
     setError('')
     if (!file) {
       setError('Choose an artifact file.')
+      return
+    }
+
+    let parsedMetadata
+    try {
+      parsedMetadata = metadata.trim() ? JSON.parse(metadata) : undefined
+    } catch {
+      setError('Metadata is not valid JSON.')
       return
     }
 
@@ -28,13 +38,14 @@ function ArtifactUploadForm({ onUpload }) {
         file,
         name,
         artifactPath,
-        metadata: metadata.trim() ? JSON.parse(metadata) : undefined,
+        metadata: parsedMetadata,
       })
       setFile(null)
       setName('')
       setArtifactPath('')
       setMetadata('')
-      event.currentTarget.reset()
+      formElement.reset()
+      if (fileInputRef.current) fileInputRef.current.value = ''
     } catch (err) {
       setError(err.message || 'Artifact upload failed.')
     } finally {
@@ -46,7 +57,7 @@ function ArtifactUploadForm({ onUpload }) {
     <form className="panel inline-form" onSubmit={handleSubmit}>
       <label>
         File
-        <input onChange={(event) => setFile(event.target.files?.[0] || null)} type="file" />
+        <input ref={fileInputRef} onChange={(event) => setFile(event.target.files?.[0] || null)} type="file" />
       </label>
       <label>
         Name
@@ -69,6 +80,7 @@ function ArtifactUploadForm({ onUpload }) {
 export function ArtifactList({ artifacts, onUpload, onDownload }) {
   const [query, setQuery] = useState('')
   const [isUploadOpen, setIsUploadOpen] = useState(false)
+  const [selectedMetadata, setSelectedMetadata] = useState(null)
   const filteredArtifacts = useMemo(
     () => artifacts.filter((artifact) => `${artifact.name} ${artifact.path} ${artifact.contentType}`.toLowerCase().includes(query.toLowerCase())),
     [artifacts, query],
@@ -97,13 +109,17 @@ export function ArtifactList({ artifacts, onUpload, onDownload }) {
           </thead>
           <tbody>
             {filteredArtifacts.map((artifact) => (
-              <tr key={artifact.id}>
+              <tr data-search-text={`${artifact.name} ${artifact.path} ${artifact.contentType}`} key={artifact.id}>
                 <td>{artifact.name}</td>
                 <td className="mono-cell">{artifact.path}</td>
                 <td>{artifact.size}</td>
                 <td>{artifact.contentType}</td>
                 <td>{artifact.created}</td>
-                <td><JsonPreview value={artifact.metadata} /></td>
+                <td>
+                  <Button size="sm" variant="secondary" onClick={() => setSelectedMetadata({ title: `${artifact.name} metadata`, value: artifact.metadata })}>
+                    View metadata
+                  </Button>
+                </td>
                 <td>
                   <Button onClick={() => onDownload?.(artifact)} variant="secondary">
                     <Download size={15} />
@@ -115,6 +131,9 @@ export function ArtifactList({ artifacts, onUpload, onDownload }) {
           </tbody>
         </table>
       </div>
+      {selectedMetadata ? (
+        <MetadataModal title={selectedMetadata.title} value={selectedMetadata.value} onClose={() => setSelectedMetadata(null)} />
+      ) : null}
     </section>
   )
 }

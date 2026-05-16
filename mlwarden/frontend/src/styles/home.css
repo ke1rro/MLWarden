@@ -268,45 +268,43 @@
   color: rgba(255, 255, 255, 0.62);
 }
 
-.mini-chart-line {
+.mini-chart-preview {
   background:
-    linear-gradient(135deg, transparent 0 16%, rgba(96, 165, 250, 0.3) 17% 18%, transparent 19% 33%, rgba(34, 211, 238, 0.42) 34% 35%, transparent 36% 48%, rgba(255, 255, 255, 0.58) 49% 50%, transparent 51%),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.06) 1px, transparent 1px, transparent 34px);
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08) 1px, transparent 1px, transparent 38px),
+    linear-gradient(180deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0));
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
-  min-height: 170px;
-}
-
-.mini-bars {
-  align-items: end;
   display: grid;
-  gap: var(--space-2);
-  grid-template-columns: repeat(5, 1fr);
-  min-height: 94px;
+  grid-template-columns: 44px repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr) 22px;
+  min-height: 190px;
+  overflow: hidden;
+  position: relative;
 }
 
-.mini-bars span {
-  background: linear-gradient(180deg, #67e8f9, #2563eb);
-  border-radius: 999px 999px 3px 3px;
+.mini-chart-preview span {
+  color: rgba(255, 255, 255, 0.64);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 8px 0 0 10px;
 }
 
-.mini-bars span:nth-child(1) {
-  height: 36%;
+.mini-chart-preview small {
+  align-self: center;
+  color: rgba(255, 255, 255, 0.58);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  grid-row: 4;
+  justify-self: center;
 }
 
-.mini-bars span:nth-child(2) {
-  height: 54%;
-}
-
-.mini-bars span:nth-child(3) {
-  height: 72%;
-}
-
-.mini-bars span:nth-child(4) {
-  height: 64%;
-}
-
-.mini-bars span:nth-child(5) {
-  height: 88%;
+.mini-chart-curve {
+  background:
+    linear-gradient(160deg, transparent 0 12%, rgba(96, 165, 250, 0.9) 13% 14%, transparent 15% 28%, rgba(96, 165, 250, 0.9) 29% 30%, transparent 31% 48%, rgba(96, 165, 250, 0.9) 49% 50%, transparent 51%),
+    linear-gradient(180deg, rgba(96, 165, 250, 0.2), transparent);
+  grid-column: 2 / 5;
+  grid-row: 1 / 4;
+  margin: 16px 16px 10px 0;
 }
 
 @media (max-width: 900px) {

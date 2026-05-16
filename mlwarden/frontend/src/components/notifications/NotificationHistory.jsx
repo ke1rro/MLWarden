@@ -12,7 +12,7 @@ function formatTimestamp(timestamp) {
 }
 
 export function NotificationHistory({ onClose }) {
-  const { notifications, markAllRead } = useNotifications()
+  const { notifications, markAllRead, unreadCount } = useNotifications()
 
   function handleMarkRead() {
     markAllRead()
@@ -26,12 +26,17 @@ export function NotificationHistory({ onClose }) {
           <h2>Notification history</h2>
           <p>Recent run and connection events from the backend.</p>
         </div>
-        <Button onClick={handleMarkRead} variant="secondary">
-          <CheckCheck size={15} />
-          Mark read
-        </Button>
+        {unreadCount ? (
+          <Button onClick={handleMarkRead} size="sm" variant="secondary">
+            <CheckCheck size={15} />
+            Mark read
+          </Button>
+        ) : null}
       </header>
       <div className="notification-history-list">
+        {!notifications.length ? (
+          <div className="notification-empty">No notifications yet.</div>
+        ) : null}
         {notifications.map((notification) => {
           const Icon = notification.type.includes('disconnected') ? WifiOff : BellRing
           return (

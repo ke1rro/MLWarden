@@ -26,7 +26,12 @@ function readStoredNotifications() {
     if (!stored) return createInitialNotifications()
 
     const parsed = JSON.parse(stored)
-    return Array.isArray(parsed) && parsed.length ? parsed : createInitialNotifications()
+    return Array.isArray(parsed) && parsed.length
+      ? parsed.map((notification) => ({
+        ...notification,
+        dismissedAt: notification.dismissedAt || notification.timestamp || new Date().toISOString(),
+      }))
+      : createInitialNotifications()
   } catch {
     return createInitialNotifications()
   }
@@ -102,7 +107,13 @@ export function NotificationsProvider({ children }) {
         if (cancelled) return
         const recent = (response.items || [])
           .filter((event) => TOAST_EVENT_TYPES.has(event.type))
-          .map(eventToNotification)
+          .map((event) => {
+            const notification = eventToNotification(event)
+            return {
+              ...notification,
+              dismissedAt: notification.dismissedAt || notification.timestamp,
+            }
+          })
         dispatch({ type: 'replace', notifications: recent })
       })
       .catch(() => {})

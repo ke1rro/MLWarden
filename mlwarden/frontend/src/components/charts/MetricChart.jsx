@@ -10,7 +10,7 @@ const axisLabel = {
   fontWeight: 500,
 }
 
-export function MetricChart({ title, series, type = 'line', area = false }) {
+export function MetricChart({ title, series, type = 'line', area = false, onReady }) {
   const chartRef = useRef(null)
 
   useEffect(() => {
@@ -51,15 +51,17 @@ export function MetricChart({ title, series, type = 'line', area = false }) {
         },
       ],
     })
+    onReady?.(chart)
 
     const resizeObserver = new ResizeObserver(() => chart.resize())
     resizeObserver.observe(chartRef.current)
 
     return () => {
       resizeObserver.disconnect()
+      onReady?.(null)
       chart.dispose()
     }
-  }, [area, series, title, type])
+  }, [area, onReady, series, title, type])
 
   if (!series) {
     return <ErrorState title="Invalid chart config" message="No metric series was found for this panel." />

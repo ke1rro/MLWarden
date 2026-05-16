@@ -290,3 +290,9 @@ __marimo__/
 .streamlit/secrets.toml
 
 /mlwarden.sqlite3*
+
+mlwarden 2.sqlite3-shm
+mlwarden 2.sqlite3-wal
+mlwarden 4.sqlite3-shm
+mlwarden 5.sqlite3-shm
+mlwarden 3.sqlite3-shm

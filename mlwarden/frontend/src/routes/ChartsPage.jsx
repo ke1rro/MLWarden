@@ -6,6 +6,7 @@ import { getProject } from '@/api/projects.js'
 import { listRuns } from '@/api/runs.js'
 import { useNotifications } from '@/app/useNotifications.js'
 import { ChartBuilder } from '@/components/charts/ChartBuilder.jsx'
+import { EmptyState } from '@/components/common/EmptyState.jsx'
 import { ErrorState } from '@/components/common/ErrorState.jsx'
 import { LoadingState } from '@/components/common/LoadingState.jsx'
 import { PageHeader } from '@/components/common/PageHeader.jsx'
@@ -53,7 +54,7 @@ export default function ChartsPage() {
 
   if (isLoading) {
     return (
-      <AppLayout breadcrumbs={['MLWarden', 'Projects', 'Charts']}>
+      <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'Charts', to: '/charts' }]}>
         <LoadingState message="Loading chart builder..." />
       </AppLayout>
     )
@@ -61,8 +62,8 @@ export default function ChartsPage() {
 
   if (!project && error) {
     return (
-      <AppLayout breadcrumbs={['MLWarden', 'Projects', 'Charts']}>
-        <ErrorState message={error} />
+      <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'Charts', to: '/charts' }]}>
+        <EmptyState title="Project not found." message="Choose an existing project before opening its chart builder." />
       </AppLayout>
     )
   }
@@ -72,7 +73,7 @@ export default function ChartsPage() {
   }
 
   return (
-    <AppLayout breadcrumbs={['MLWarden', 'Projects', project.name, 'Charts']}>
+    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: project.name, to: `/projects/${project.id}` }, { label: 'Charts' }]}>
       <PageHeader title="Charts" subtitle="Build saved project charts from metrics, params, metadata, tables, and events." />
       {error ? <ErrorState message={error} /> : null}
       <ChartBuilder project={project} runs={runs} savedCharts={savedCharts} onSaveChart={handleSaveChart} />

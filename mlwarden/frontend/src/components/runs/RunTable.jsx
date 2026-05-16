@@ -21,6 +21,8 @@ function RunActions({ run, onRunAction }) {
 }
 
 export function RunTable({ runs, onRunAction }) {
+  const showProject = runs.some((run) => run.projectName)
+
   if (!runs.length) {
     return <EmptyState title="No runs match these filters." message="Adjust the filters or start a worker run." />
   }
@@ -32,9 +34,10 @@ export function RunTable({ runs, onRunAction }) {
           <tr>
             <th>Status</th>
             <th>Run name</th>
+            {showProject ? <th>Project</th> : null}
             <th>Created</th>
             <th>Duration</th>
-            <th>Best PSNR</th>
+            <th>Summary metric</th>
             <th>Final loss</th>
             <th>Tags</th>
             <th>Worker</th>
@@ -43,16 +46,21 @@ export function RunTable({ runs, onRunAction }) {
         </thead>
         <tbody>
           {runs.map((run) => (
-            <tr key={run.id}>
+            <tr data-search-text={`${run.name} ${run.projectName || ''} ${run.status} ${run.tags.join(' ')}`} key={run.id}>
               <td><StatusBadge status={run.status} /></td>
               <td>
                 <Link className="table-link" to={`/runs/${run.id}`}>
                   {run.name}
                 </Link>
               </td>
+              {showProject ? (
+                <td>
+                  {run.projectId ? <Link className="table-link" to={`/projects/${run.projectId}`}>{run.projectName}</Link> : run.projectName}
+                </td>
+              ) : null}
               <td>{run.created}</td>
               <td>{run.duration}</td>
-              <td>{run.bestPsnr ?? 'n/a'}</td>
+              <td>{run.bestPsnr ?? run.finalLoss ?? 'n/a'}</td>
               <td>{run.finalLoss ?? 'n/a'}</td>
               <td>
                 <div className="tag-row">

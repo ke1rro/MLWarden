@@ -8,8 +8,8 @@ export default function LoginPage() {
   const { isAuthenticated, isBootstrapping, login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [username, setUsername] = useState('admin')
-  const [password, setPassword] = useState('password')
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
