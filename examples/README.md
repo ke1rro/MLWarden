@@ -48,6 +48,21 @@ scripts/load_data.sh
 
 Generated local files are written under `examples/outputs/` and uploaded through the SDK.
 
+## Stream A Live Demo Run
+
+Use this when you want a long-running run that updates charts and media panels in real time.
+
+```bash
+python examples/live_training_demo.py \
+  --base-url http://localhost:8000 \
+  --api-key dev-api-key \
+  --project live-demo \
+  --steps 300 \
+  --delay 1
+```
+
+The script prints the run URL, defines SDK chart/media panels, logs metrics every step, uploads preview images periodically, and finishes the run when the loop completes.
+
 ## What Gets Created
 
 PyTorch classification runs train a real CPU MLP on synthetic Gaussian blobs:

@@ -161,7 +161,7 @@ export default function RunDetailPage() {
     if (activeTab === 'images') return <ImageGallery getImageUrl={getImageFileUrl} images={images} onUpload={handleImageUpload} />
     if (activeTab === 'artifacts') return <ArtifactList artifacts={artifacts} onDownload={handleArtifactDownload} onUpload={handleArtifactUpload} />
     if (activeTab === 'events') return <EventTimeline events={events} />
-    return <RunChartsWorkspace metricSeries={metricSeries} metricSummaries={metricSummaries} project={project} run={run} />
+    return <RunChartsWorkspace metricSeries={metricSeries} run={run} images={images} getImageUrl={getImageFileUrl} />
   }
 
   if (isLoading) {

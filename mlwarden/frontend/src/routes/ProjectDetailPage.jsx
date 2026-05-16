@@ -51,7 +51,19 @@ function ProjectMetricSummary({ stats }) {
   )
 }
 
-function ProjectRunFilters({ query, status, tag, tags, onQueryChange, onStatusChange, onTagChange }) {
+function ProjectRunFilters({
+  query,
+  status,
+  tag,
+  tags,
+  startDate,
+  endDate,
+  onQueryChange,
+  onStatusChange,
+  onTagChange,
+  onStartDateChange,
+  onEndDateChange,
+}) {
   return (
     <Toolbar>
       <SearchInput value={query} onChange={onQueryChange} placeholder="Search run names" />
@@ -63,7 +75,8 @@ function ProjectRunFilters({ query, status, tag, tags, onQueryChange, onStatusCh
         {tags.map((item) => <option key={item} value={item}>{item}</option>)}
       </select>
       <input placeholder="Metric search: val.psnr > 30" />
-      <input placeholder="Date range" />
+      <input aria-label="Runs created after" type="date" value={startDate} onChange={(event) => onStartDateChange(event.target.value)} />
+      <input aria-label="Runs created before" type="date" value={endDate} onChange={(event) => onEndDateChange(event.target.value)} />
     </Toolbar>
   )
 }
@@ -112,6 +125,8 @@ export default function ProjectDetailPage() {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('all')
   const [tag, setTag] = useState('all')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
@@ -168,7 +183,10 @@ export default function ProjectDetailPage() {
     const matchesStatus = status === 'all' || run.status === status
     const matchesTag = tag === 'all' || run.tags.includes(tag)
     const matchesQuery = `${run.name} ${run.description} ${run.worker}`.toLowerCase().includes(query.toLowerCase())
-    return matchesStatus && matchesTag && matchesQuery
+    const createdTime = run.created_at ? new Date(run.created_at).getTime() : null
+    const afterStart = !startDate || (createdTime && createdTime >= new Date(`${startDate}T00:00:00`).getTime())
+    const beforeEnd = !endDate || (createdTime && createdTime <= new Date(`${endDate}T23:59:59`).getTime())
+    return matchesStatus && matchesTag && matchesQuery && afterStart && beforeEnd
   })
 
   async function handleCreateRun(event) {
@@ -267,27 +285,40 @@ export default function ProjectDetailPage() {
         status={status}
         tag={tag}
         tags={tags}
+        startDate={startDate}
+        endDate={endDate}
         onQueryChange={setQuery}
         onStatusChange={setStatus}
         onTagChange={setTag}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
       />
       <RunTable runs={filteredRuns} onRunAction={handleRunAction} />
       <SavedChartsSection project={project} savedCharts={savedCharts} previewSeries={previewSeries} />
       {isSettingsOpen ? (
         <Modal title={`${project.name} settings`} description="Project metadata and local display settings." onClose={() => setIsSettingsOpen(false)}>
-          <div className="settings-form-grid">
-            <label>
-              Project name
-              <input readOnly value={project.name} />
-            </label>
-            <label>
-              Description
-              <textarea readOnly value={project.description || ''} rows={3} />
-            </label>
-            <label>
-              Tags
-              <input readOnly value={project.tags.join(', ')} />
-            </label>
+          <div className="project-settings-panel">
+            <div className="metric-grid compact">
+              <MetricCard label="Runs" value={projectStats.runs} detail="total" />
+              <MetricCard label="Running" value={projectStats.running} detail="active" />
+              <MetricCard label="Charts" value={savedCharts.length} detail="saved" />
+            </div>
+            <section className="settings-summary-card">
+              <h3>Project profile</h3>
+              <dl>
+                <div><dt>Name</dt><dd>{project.name}</dd></div>
+                <div><dt>Description</dt><dd>{project.description || 'No description'}</dd></div>
+                <div><dt>Latest run</dt><dd>{project.latestRun}</dd></div>
+              </dl>
+            </section>
+            <section className="settings-summary-card">
+              <h3>Tags</h3>
+              {project.tags.length ? <ProjectTags tags={project.tags} /> : <p className="muted-copy">No tags configured.</p>}
+            </section>
+            <section className="settings-summary-card">
+              <h3>Metadata</h3>
+              <pre className="metadata-panel">{JSON.stringify(project.metadata || {}, null, 2)}</pre>
+            </section>
           </div>
         </Modal>
       ) : null}

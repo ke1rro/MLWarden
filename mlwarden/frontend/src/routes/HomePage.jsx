@@ -1,7 +1,57 @@
-import { ArrowRight, Boxes, LineChart, ShieldCheck, Sparkles } from 'lucide-react'
+import { useEffect, useRef } from 'react'
+import * as echarts from 'echarts'
+import { ArrowRight, Boxes, Image, LineChart, ShieldCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Logo } from '@/components/common/Logo.jsx'
 import { ShaderAnimation } from '@/components/ui/ShaderAnimation.jsx'
+
+function HomeDemoChart() {
+  const chartRef = useRef(null)
+
+  useEffect(() => {
+    if (!chartRef.current) return undefined
+    const chart = echarts.init(chartRef.current, null, { renderer: 'svg' })
+    chart.setOption({
+      animation: false,
+      backgroundColor: 'transparent',
+      color: ['#38bdf8'],
+      grid: { left: 42, right: 42, top: 16, bottom: 28 },
+      tooltip: { trigger: 'axis', confine: true },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: ['0', '10', '20', '30', '40', '50', '60'],
+        axisLabel: { color: 'rgba(255,255,255,0.58)', fontFamily: 'SFMono-Regular, Consolas, monospace' },
+        axisLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } },
+        splitLine: { show: true, lineStyle: { color: 'rgba(255,255,255,0.08)' } },
+      },
+      yAxis: {
+        type: 'value',
+        scale: true,
+        axisLabel: { color: 'rgba(255,255,255,0.58)', fontFamily: 'SFMono-Regular, Consolas, monospace' },
+        axisLine: { show: false },
+        splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } },
+      },
+      series: [{
+        name: 'validation loss',
+        type: 'line',
+        data: [0.94, 0.71, 0.53, 0.39, 0.31, 0.26, 0.22],
+        smooth: true,
+        symbolSize: 5,
+        lineStyle: { width: 3 },
+        areaStyle: { color: 'rgba(56,189,248,0.16)' },
+      }],
+    })
+    const resizeObserver = new ResizeObserver(() => chart.resize())
+    resizeObserver.observe(chartRef.current)
+    return () => {
+      resizeObserver.disconnect()
+      chart.dispose()
+    }
+  }, [])
+
+  return <div className="home-demo-chart" ref={chartRef} />
+}
 
 export default function HomePage() {
   return (
@@ -16,14 +66,10 @@ export default function HomePage() {
       </header>
 
       <section className="home-hero" id="workspace">
-        <div className="home-kicker">
-          <Sparkles size={16} />
-          Self-hosted experiment intelligence
-        </div>
-        <h1>Track every run, artifact, and signal before the model drifts.</h1>
+        <h1>Watch training as it happens.</h1>
         <p>
-          MLWarden gives small ML teams a dense local workspace for metrics, logs, tables,
-          images, and workflow events without shipping experiment data to a SaaS platform.
+          MLWarden gives local ML teams a focused workspace for metrics, media,
+          artifacts, logs, and system signals.
         </p>
         <div className="home-actions">
           <Link className="home-button primary" to="/projects">
@@ -46,25 +92,22 @@ export default function HomePage() {
               <LineChart size={16} />
               validation loss
             </header>
-            <div className="mini-chart-preview">
-              <span>0.50</span>
-              <span>0.25</span>
-              <span>0.10</span>
-              <div className="mini-chart-curve" />
-              <small>epoch 1</small>
-              <small>epoch 5</small>
-              <small>epoch 10</small>
-            </div>
+            <HomeDemoChart />
           </article>
           <article className="console-card">
             <ShieldCheck size={18} />
-            <strong>Finished</strong>
-            <small>14m 32s · gpu-worker-01</small>
+            <strong>Running</strong>
+            <small>epoch 42 / 90 · gpu-worker-01</small>
           </article>
           <article className="console-card">
             <Boxes size={18} />
-            <strong>model.pt</strong>
+            <strong>checkpoint.pt</strong>
             <small>94.2 MB uploaded</small>
+          </article>
+          <article className="console-card">
+            <Image size={18} />
+            <strong>predictions</strong>
+            <small>batch preview at step 1200</small>
           </article>
         </div>
       </section>

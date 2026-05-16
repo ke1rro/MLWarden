@@ -28,10 +28,10 @@ function ChartGridPanel({ panel, metricSeries, onChartReady, onExportPanel, onRe
       onRemove={() => onRemovePanel(panel.id)}
       onResize={(size) => onResizePanel?.(panel.id, size)}
       size={panel.size || 'md'}
-      title={panel.metric}
+      title={panel.title || panel.metric}
     >
       <MetricChart
-        title={panel.metric}
+        title={panel.title || panel.metric}
         series={metricSeries[panel.metric]}
         type={panel.type || 'line'}
         area={panel.area ?? panel.metric.includes('loss')}

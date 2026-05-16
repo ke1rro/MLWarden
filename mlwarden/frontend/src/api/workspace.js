@@ -57,47 +57,6 @@ export async function loadAllArtifacts(projectsInput, runsInput) {
   return artifactGroups.flat()
 }
 
-export function buildReports({ projects = [], runs = [], charts = [], artifacts = [] }) {
-  const projectReports = projects.map((project) => {
-    const projectRuns = runs.filter((run) => run.projectId === project.id)
-    const projectCharts = charts.filter((chart) => chart.projectId === project.id)
-    const projectArtifacts = artifacts.filter((artifact) => artifact.projectId === project.id)
-    return {
-      id: `project-${project.id}`,
-      kind: 'Project report',
-      title: `${project.name} summary report`,
-      description: `${projectRuns.length} runs, ${projectCharts.length} saved charts, ${projectArtifacts.length} artifacts.`,
-      projectId: project.id,
-      projectName: project.name,
-      to: `/projects/${project.id}`,
-      metrics: [
-        ['Runs', projectRuns.length],
-        ['Running', projectRuns.filter((run) => run.status === 'running').length],
-        ['Failed', projectRuns.filter((run) => run.status === 'failed').length],
-      ],
-    }
-  })
-
-  const runReports = runs.map((run) => ({
-    id: `run-${run.id}`,
-    kind: 'Run report',
-    title: `${run.name} run report`,
-    description: `${run.status} run in ${run.projectName}. Duration ${run.duration}.`,
-    projectId: run.projectId,
-    projectName: run.projectName,
-    runId: run.id,
-    runName: run.name,
-    to: `/runs/${run.id}`,
-    metrics: [
-      ['Status', run.status],
-      ['Duration', run.duration],
-      ['Final loss', run.finalLoss ?? 'n/a'],
-    ],
-  }))
-
-  return [...projectReports, ...runReports]
-}
-
 export async function loadWorkspaceSnapshot({ includeArtifacts = false } = {}) {
   const projects = await loadProjects()
   const [runs, charts] = await Promise.all([
@@ -105,7 +64,6 @@ export async function loadWorkspaceSnapshot({ includeArtifacts = false } = {}) {
     loadAllCharts(projects),
   ])
   const artifacts = includeArtifacts ? await loadAllArtifacts(projects, runs) : []
-  const reports = buildReports({ projects, runs, charts, artifacts })
 
-  return { projects, runs, charts, artifacts, reports }
+  return { projects, runs, charts, artifacts }
 }

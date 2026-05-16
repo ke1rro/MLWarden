@@ -1,14 +1,12 @@
-import { LoaderCircle, Search } from 'lucide-react'
+import { LoaderCircle } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { loadWorkspaceSnapshot } from '@/api/workspace.js'
-import { Modal } from '@/components/common/Modal.jsx'
 
 const groups = [
   ['projects', 'Projects'],
   ['runs', 'Runs'],
   ['charts', 'Charts'],
-  ['reports', 'Reports'],
   ['artifacts', 'Artifacts'],
 ]
 
@@ -52,15 +50,6 @@ function buildResults(snapshot, query) {
       to: `/projects/${chart.projectId}/charts`,
     }))
 
-  const reports = snapshot.reports
-    .filter((report) => containsKeyword([report.title, report.description, report.projectName, report.runName], query))
-    .map((report) => ({
-      id: report.id,
-      title: report.title,
-      detail: `${report.kind} · ${report.description}`,
-      to: '/reports',
-    }))
-
   const artifacts = snapshot.artifacts
     .filter((artifact) => containsKeyword([artifact.name, artifact.path, artifact.contentType, artifact.projectName, artifact.runName], query))
     .map((artifact) => ({
@@ -70,13 +59,12 @@ function buildResults(snapshot, query) {
       to: `/runs/${artifact.runId}?tab=artifacts`,
     }))
 
-  return { projects, runs, charts, reports, artifacts }
+  return { projects, runs, charts, artifacts }
 }
 
-export function GlobalSearchModal({ initialQuery = '', onClose }) {
-  const [query, setQuery] = useState(initialQuery)
+export function GlobalSearchModal({ query = '', onClose }) {
   const [snapshot, setSnapshot] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [loadedQuery, setLoadedQuery] = useState('')
   const [error, setError] = useState('')
   const trimmedQuery = query.trim()
 
@@ -90,14 +78,15 @@ export function GlobalSearchModal({ initialQuery = '', onClose }) {
       .then((nextSnapshot) => {
         if (!cancelled) {
           setSnapshot(nextSnapshot)
+          setLoadedQuery(trimmedQuery)
           setError('')
         }
       })
       .catch((err) => {
-        if (!cancelled) setError(err.message || 'Search failed.')
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false)
+        if (!cancelled) {
+          setLoadedQuery(trimmedQuery)
+          setError(err.message || 'Search failed.')
+        }
       })
 
     return () => {
@@ -105,28 +94,19 @@ export function GlobalSearchModal({ initialQuery = '', onClose }) {
     }
   }, [trimmedQuery])
 
+  const isLoading = trimmedQuery.length >= 2 && loadedQuery !== trimmedQuery && !error
   const results = useMemo(
-    () => (snapshot && trimmedQuery.length >= 2 ? buildResults(snapshot, trimmedQuery) : {}),
-    [snapshot, trimmedQuery],
+    () => (snapshot && loadedQuery === trimmedQuery && trimmedQuery.length >= 2 ? buildResults(snapshot, trimmedQuery) : {}),
+    [loadedQuery, snapshot, trimmedQuery],
   )
   const total = groups.reduce((sum, [key]) => sum + (results[key]?.length || 0), 0)
 
   return (
-    <Modal title="Search workspace" description="Find projects, runs, charts, reports, and artifacts." onClose={onClose} size="lg">
-      <label className="global-search-modal-input">
-        <Search size={17} />
-        <input
-          autoFocus
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search by project, run, metric, report, or artifact"
-          type="search"
-        />
-      </label>
+    <div className="global-search-dropdown" role="dialog" aria-label="Search results">
       {trimmedQuery.length < 2 ? <p className="muted-copy">Type at least two characters.</p> : null}
       {isLoading ? <p className="search-loading"><LoaderCircle size={16} /> Searching...</p> : null}
-      {trimmedQuery.length >= 2 && error ? <p className="form-error">{error}</p> : null}
-      {!isLoading && trimmedQuery.length >= 2 && !error && !total ? (
+      {trimmedQuery.length >= 2 && loadedQuery === trimmedQuery && error ? <p className="form-error">{error}</p> : null}
+      {!isLoading && trimmedQuery.length >= 2 && loadedQuery === trimmedQuery && !error && !total ? (
         <p className="muted-copy">No matching workspace items.</p>
       ) : null}
       <div className="global-search-results">
@@ -152,6 +132,6 @@ export function GlobalSearchModal({ initialQuery = '', onClose }) {
           )
         })}
       </div>
-    </Modal>
+    </div>
   )
 }

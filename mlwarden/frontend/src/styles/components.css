@@ -711,10 +711,44 @@
 .global-search-results,
 .search-result-group,
 .option-list,
-.settings-form-grid,
-.report-summary {
+.settings-form-grid {
   display: grid;
   gap: var(--space-2);
+}
+
+.project-settings-panel,
+.settings-summary-card {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.settings-summary-card {
+  background: var(--color-panel-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+.settings-summary-card dl {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.settings-summary-card dl div {
+  display: grid;
+  gap: 3px;
+}
+
+.settings-summary-card dt {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.settings-summary-card dd {
+  margin: 0;
 }
 
 .search-result-group h3 {

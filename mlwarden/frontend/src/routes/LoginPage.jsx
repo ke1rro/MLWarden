@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/app/useAuth.js'
 import { Button } from '@/components/common/Button.jsx'
 import { Logo } from '@/components/common/Logo.jsx'
@@ -55,6 +55,7 @@ export default function LoginPage() {
         <Button className="full-width" disabled={loading} type="submit">
           {loading ? 'Signing in...' : 'Sign in'}
         </Button>
+        <Link className="login-back-link" to="/">Back to home</Link>
       </form>
     </main>
   )

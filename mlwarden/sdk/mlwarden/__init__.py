@@ -145,6 +145,79 @@ class Run:
         self.data = self.tracker.request("POST", f"/api/runs/{self.id}/fail", json=payload)
         return self.data
 
+    def update(
+        self,
+        *,
+        metadata: dict[str, Any] | None = None,
+        summary: dict[str, Any] | None = None,
+        description: str | None = None,
+        tags: list[str] | None = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {}
+        if metadata is not None:
+            payload["metadata"] = metadata
+        if summary is not None:
+            payload["summary"] = summary
+        if description is not None:
+            payload["description"] = description
+        if tags is not None:
+            payload["tags"] = tags
+        self.data = self.tracker.request("PATCH", f"/api/runs/{self.id}", json=payload)
+        return self.data
+
+    def define_panel(
+        self,
+        name: str,
+        metric: str,
+        *,
+        chart_type: str = "line",
+        size: str = "md",
+        area: bool | None = None,
+    ) -> dict[str, Any]:
+        return self._upsert_panel(
+            {
+                "id": name,
+                "name": name,
+                "metric": metric,
+                "type": chart_type,
+                "size": size,
+                "area": area,
+            }
+        )
+
+    def define_media_panel(
+        self,
+        name: str,
+        *,
+        image_name: str | None = None,
+        size: str = "md",
+    ) -> dict[str, Any]:
+        return self._upsert_panel(
+            {
+                "id": name,
+                "name": name,
+                "type": "media",
+                "image_name": image_name,
+                "size": size,
+            }
+        )
+
+    def _upsert_panel(self, panel: dict[str, Any]) -> dict[str, Any]:
+        metadata = dict(self.data.get("metadata") or {})
+        panels = list(metadata.get("mlwarden_panels") or [])
+        clean_panel = {key: value for key, value in panel.items() if value is not None}
+        panel_id = clean_panel["id"]
+        replaced = False
+        for index, existing in enumerate(panels):
+            if existing.get("id") == panel_id or existing.get("name") == panel_id:
+                panels[index] = {**existing, **clean_panel}
+                replaced = True
+                break
+        if not replaced:
+            panels.append(clean_panel)
+        metadata["mlwarden_panels"] = panels
+        return self.update(metadata=metadata)
+
     def log_metric(
         self,
         name: str,

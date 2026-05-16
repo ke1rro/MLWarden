@@ -1,5 +1,5 @@
-import { Plus, Settings, SlidersHorizontal } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { Image as ImageIcon, Plus, SlidersHorizontal } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/common/Button.jsx'
 import { EmptyState } from '@/components/common/EmptyState.jsx'
 import { Modal } from '@/components/common/Modal.jsx'
@@ -7,48 +7,121 @@ import { SearchInput } from '@/components/common/SearchInput.jsx'
 import { Toolbar } from '@/components/common/Toolbar.jsx'
 import { IconButton } from '@/components/common/IconButton.jsx'
 import { ChartGrid } from '@/components/charts/ChartGrid.jsx'
-import { dataUrlToBlob, saveBlob, saveTextFile } from '@/shared/downloads.js'
+import { dataUrlToBlob, saveBlob } from '@/shared/downloads.js'
 
 function matchesPanelQuery(panel, query) {
   if (!query.trim()) return true
-  try {
-    return new RegExp(query, 'i').test(panel.metric)
-  } catch {
-    return panel.metric.toLowerCase().includes(query.toLowerCase())
-  }
+  return `${panel.metric || panel.title || ''}`.toLowerCase().includes(query.toLowerCase())
 }
 
-function createDefaultPanels(metricNames) {
-  return metricNames.slice(0, 4).map((metric) => ({ id: metric, metric, size: 'md' }))
+function inferChartType(metric) {
+  const normalized = metric.toLowerCase()
+  if (normalized.includes('count') || normalized.includes('histogram')) return 'bar'
+  if (normalized.includes('scatter')) return 'scatter'
+  if (normalized.includes('loss') || normalized.includes('usage')) return 'area'
+  return 'line'
 }
 
-export function RunChartsWorkspace({ metricSeries, metricSummaries = [], project, run }) {
+function createDefaultPanels(metricNames, sdkPanels = []) {
+  if (sdkPanels.length) return sdkPanels
+  return metricNames.slice(0, 4).map((metric) => ({ id: metric, metric, size: 'md', type: inferChartType(metric) }))
+}
+
+function normalizeSdkPanels(run, metricNames) {
+  const rawPanels = run?.metadata?.mlwarden_panels || run?.metadata?.panels || []
+  if (!Array.isArray(rawPanels)) return []
+  return rawPanels
+    .map((panel, index) => {
+      const metric = panel.metric || panel.y_axis || panel.name
+      if (!metric || !metricNames.includes(metric)) return null
+      return {
+        id: panel.id || `${metric}-${index}`,
+        metric,
+        title: panel.title || panel.name || metric,
+        size: panel.size || 'md',
+        type: panel.type || panel.chart_type || inferChartType(metric),
+        area: panel.area,
+      }
+    })
+    .filter(Boolean)
+}
+
+function MediaPanel({ image, imageUrl }) {
+  return (
+    <article className="chart-panel media-panel" data-search-text={`${image.name} ${image.caption}`}>
+      <header className="chart-panel-header">
+        <h3>{image.name}</h3>
+        <ImageIcon size={16} />
+      </header>
+      {imageUrl ? <img alt={image.name} src={imageUrl} /> : <span className="image-placeholder" />}
+      <p>{image.caption || `step ${image.step}`}</p>
+    </article>
+  )
+}
+
+export function RunChartsWorkspace({ metricSeries, run, images = [], getImageUrl }) {
   const [query, setQuery] = useState('')
   const [panelOverrides, setPanelOverrides] = useState(null)
-  const [chartType, setChartType] = useState('line')
   const [isAddOpen, setIsAddOpen] = useState(false)
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const [isReportOpen, setIsReportOpen] = useState(false)
+  const [builderMetric, setBuilderMetric] = useState('')
+  const [builderName, setBuilderName] = useState('')
+  const [imageUrls, setImageUrls] = useState({})
   const chartRefs = useRef({})
   const metricNames = useMemo(() => Object.keys(metricSeries), [metricSeries])
+  const sdkPanels = useMemo(() => normalizeSdkPanels(run, metricNames), [metricNames, run])
   const panels = useMemo(() => {
-    const selectedPanels = panelOverrides ?? createDefaultPanels(metricNames)
+    const selectedPanels = panelOverrides ?? createDefaultPanels(metricNames, sdkPanels)
     return selectedPanels.filter((panel) => metricNames.includes(panel.metric))
-  }, [metricNames, panelOverrides])
+  }, [metricNames, panelOverrides, sdkPanels])
   const visiblePanels = useMemo(
     () => panels.filter((panel) => metricNames.includes(panel.metric) && matchesPanelQuery(panel, query)),
     [metricNames, panels, query],
   )
   const availablePanels = metricNames.filter((metric) => !panels.some((panel) => panel.metric === metric))
+  const mediaImages = useMemo(() => images.slice(0, 4), [images])
+
+  useEffect(() => {
+    if (!getImageUrl || !mediaImages.length) return undefined
+    let cancelled = false
+    const objectUrls = []
+    Promise.all(
+      mediaImages.map(async (image) => {
+        const url = await getImageUrl(image.id)
+        objectUrls.push(url)
+        return [image.id, url]
+      }),
+    ).then((entries) => {
+      if (!cancelled) setImageUrls(Object.fromEntries(entries))
+    }).catch(() => {
+      if (!cancelled) setImageUrls({})
+    })
+    return () => {
+      cancelled = true
+      objectUrls.forEach((url) => URL.revokeObjectURL(url))
+    }
+  }, [getImageUrl, mediaImages])
 
   const handleChartReady = useCallback((panelId, chart) => {
     if (chart) chartRefs.current[panelId] = chart
     else delete chartRefs.current[panelId]
   }, [])
 
-  function handleAddPanel(metric) {
-    setPanelOverrides((current) => [...(current ?? panels), { id: metric, metric, size: 'md' }])
+  function handleAddPanel(event) {
+    event.preventDefault()
+    if (!builderMetric) return
+    setPanelOverrides((current) => [
+      ...(current ?? panels),
+      {
+        id: `${builderMetric}-${Date.now()}`,
+        metric: builderMetric,
+        title: builderName.trim() || builderMetric,
+        size: 'md',
+        type: inferChartType(builderMetric),
+      },
+    ])
+    setBuilderMetric('')
+    setBuilderName('')
     setIsAddOpen(false)
   }
 
@@ -89,18 +162,6 @@ export function RunChartsWorkspace({ metricSeries, metricSummaries = [], project
     await saveBlob(dataUrlToBlob(dataUrl), `${panel.metric}.${format}`, mimeType)
   }
 
-  function handleDownloadReport() {
-    const report = {
-      generated_at: new Date().toISOString(),
-      project: project?.name,
-      run: run?.name,
-      status: run?.status,
-      metrics: metricSummaries,
-      panels: panels.map((panel) => panel.metric),
-    }
-    saveTextFile(JSON.stringify(report, null, 2), `${run?.name || 'run'}-report.json`, 'application/json')
-  }
-
   if (!metricNames.length) {
     return <EmptyState title="No metrics logged yet." message="Charts will appear after a worker logs metrics for this run." />
   }
@@ -108,15 +169,13 @@ export function RunChartsWorkspace({ metricSeries, metricSummaries = [], project
   return (
     <section className="workspace-stack">
       <Toolbar>
-        <SearchInput value={query} onChange={setQuery} placeholder="Search panels with regex" />
-        <IconButton label="Panel settings" icon={Settings} onClick={() => setIsSettingsOpen(true)} />
+        <SearchInput value={query} onChange={setQuery} placeholder="Search panels" />
         <IconButton label="Filter panels" icon={SlidersHorizontal} onClick={() => setIsFilterOpen(true)} />
-        <Button onClick={() => setIsReportOpen(true)} variant="secondary">New report</Button>
         <Button disabled={!availablePanels.length} onClick={() => setIsAddOpen(true)}><Plus size={15} /> Add panel</Button>
       </Toolbar>
       {visiblePanels.length ? (
         <ChartGrid
-          panels={visiblePanels.map((panel) => ({ ...panel, type: chartType }))}
+          panels={visiblePanels}
           metricSeries={metricSeries}
           onChartReady={handleChartReady}
           onExportPanel={handleExportPanel}
@@ -127,30 +186,42 @@ export function RunChartsWorkspace({ metricSeries, metricSummaries = [], project
       ) : (
         <EmptyState title="No panels match this filter." message="Clear the panel search or add another metric panel." />
       )}
-      {isAddOpen ? (
-        <Modal title="Add panel" description="Choose a metric to add to the grid." onClose={() => setIsAddOpen(false)}>
-          <div className="option-list">
-            {availablePanels.map((metric) => (
-              <button data-search-text={metric} key={metric} onClick={() => handleAddPanel(metric)} type="button">
-                {metric}
-              </button>
-            ))}
+      {mediaImages.length ? (
+        <section className="media-panel-section">
+          <header className="section-header">
+            <div>
+              <h2>Media panels</h2>
+              <p>Images logged by the SDK for training samples, predictions, and artifacts.</p>
+            </div>
+          </header>
+          <div className="chart-grid compact-grid">
+            {mediaImages.map((image) => <MediaPanel image={image} imageUrl={imageUrls[image.id]} key={image.id} />)}
           </div>
-        </Modal>
+        </section>
       ) : null}
-      {isSettingsOpen ? (
-        <Modal title="Panel settings" description="Apply display preferences to the chart workspace." onClose={() => setIsSettingsOpen(false)}>
-          <div className="settings-form-grid">
+      {isAddOpen ? (
+        <Modal title="Chart builder" description="Create a local panel from SDK-logged metrics. Chart type is inferred from metric metadata/name." onClose={() => setIsAddOpen(false)}>
+          <form className="settings-form-grid" onSubmit={handleAddPanel}>
             <label>
-              Chart type
-              <select value={chartType} onChange={(event) => setChartType(event.target.value)}>
-                <option value="line">Line</option>
-                <option value="area">Area</option>
-                <option value="bar">Bar</option>
-                <option value="scatter">Scatter</option>
+              Panel name
+              <input value={builderName} onChange={(event) => setBuilderName(event.target.value)} placeholder={builderMetric || 'Validation loss'} />
+            </label>
+            <label>
+              Metric
+              <select value={builderMetric} onChange={(event) => setBuilderMetric(event.target.value)} required>
+                <option value="">Choose metric</option>
+                {availablePanels.map((metric) => <option key={metric} value={metric}>{metric}</option>)}
               </select>
             </label>
-          </div>
+            <label>
+              SDK-defined chart type
+              <input readOnly value={builderMetric ? inferChartType(builderMetric) : 'Choose a metric'} />
+            </label>
+            <div className="button-row">
+              <Button type="submit">Add chart panel</Button>
+              <Button onClick={() => setIsAddOpen(false)} variant="secondary">Cancel</Button>
+            </div>
+          </form>
         </Modal>
       ) : null}
       {isFilterOpen ? (
@@ -175,46 +246,6 @@ export function RunChartsWorkspace({ metricSeries, metricSummaries = [], project
                 </button>
               )
             })}
-          </div>
-        </Modal>
-      ) : null}
-      {isReportOpen ? (
-        <Modal
-          title={`${run?.name || 'Run'} report`}
-          description="Generated from the current run metrics and visible panels."
-          onClose={() => setIsReportOpen(false)}
-          footer={(
-            <>
-              <Button variant="secondary" onClick={() => setIsReportOpen(false)}>Close</Button>
-              <Button onClick={handleDownloadReport}>Download JSON</Button>
-            </>
-          )}
-          size="lg"
-        >
-          <div className="report-summary">
-            <div className="mini-metric-row">
-              <small><b>{run?.status || 'n/a'}</b> Status</small>
-              <small><b>{metricSummaries.length}</b> Metrics</small>
-              <small><b>{panels.length}</b> Panels</small>
-            </div>
-            <div className="table-shell tight">
-              <table className="data-table">
-                <thead>
-                  <tr><th>Metric</th><th>Latest</th><th>Min</th><th>Max</th><th>Count</th></tr>
-                </thead>
-                <tbody>
-                  {metricSummaries.slice(0, 10).map((summary) => (
-                    <tr key={summary.name}>
-                      <td>{summary.name}</td>
-                      <td>{summary.latest}</td>
-                      <td>{summary.min}</td>
-                      <td>{summary.max}</td>
-                      <td>{summary.count}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           </div>
         </Modal>
       ) : null}

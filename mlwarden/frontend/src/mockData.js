@@ -336,9 +336,9 @@ export const artifactsByRunId = {
   'run-dulcet-snowflake-18': [
     { id: 'artifact-1', name: 'model.pt', path: 'checkpoints/model.pt', size: '94.2 MB', contentType: 'application/octet-stream', created: '2026-05-11 12:16', metadata: { epoch: 3, best: true } },
     { id: 'artifact-2', name: 'config.yaml', path: 'config/config.yaml', size: '4.8 KB', contentType: 'text/yaml', created: '2026-05-11 12:02', metadata: { source: 'worker' } },
-    { id: 'artifact-3', name: 'metrics.csv', path: 'reports/metrics.csv', size: '38.1 KB', contentType: 'text/csv', created: '2026-05-11 12:17', metadata: { rows: 80 } },
+    { id: 'artifact-3', name: 'metrics.csv', path: 'exports/metrics.csv', size: '38.1 KB', contentType: 'text/csv', created: '2026-05-11 12:17', metadata: { rows: 80 } },
     { id: 'artifact-4', name: 'visual_comparison.zip', path: 'images/visual_comparison.zip', size: '128.4 MB', contentType: 'application/zip', created: '2026-05-11 12:17', metadata: { images: 64 } },
-    { id: 'artifact-5', name: 'report.json', path: 'reports/report.json', size: '12.5 KB', contentType: 'application/json', created: '2026-05-11 12:17', metadata: { schema: 1 } },
+    { id: 'artifact-5', name: 'summary.json', path: 'exports/summary.json', size: '12.5 KB', contentType: 'application/json', created: '2026-05-11 12:17', metadata: { schema: 1 } },
   ],
 }
 

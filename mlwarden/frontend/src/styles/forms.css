@@ -137,6 +137,17 @@
   margin-bottom: 0;
 }
 
+.login-back-link {
+  color: var(--color-muted);
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.login-back-link:hover {
+  color: var(--color-text);
+}
+
 .login-card label,
 .builder-panel label,
 .settings-panel label {

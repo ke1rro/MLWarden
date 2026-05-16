@@ -8,8 +8,8 @@ import ChartsPage from '@/routes/ChartsPage.jsx'
 import ChartsIndexPage from '@/routes/ChartsIndexPage.jsx'
 import RunsPage from '@/routes/RunsPage.jsx'
 import WorkspacePage from '@/routes/WorkspacePage.jsx'
-import ReportsPage from '@/routes/ReportsPage.jsx'
 import ArtifactsPage from '@/routes/ArtifactsPage.jsx'
+import SystemPage from '@/routes/SystemPage.jsx'
 import SettingsPage from '@/routes/SettingsPage.jsx'
 import NotFoundPage from '@/routes/NotFoundPage.jsx'
 import OfflinePage from '@/routes/OfflinePage.jsx'
@@ -48,12 +48,12 @@ export const router = createBrowserRouter([
         element: <ChartsIndexPage />,
       },
       {
-        path: '/reports',
-        element: <ReportsPage />,
-      },
-      {
         path: '/artifacts',
         element: <ArtifactsPage />,
+      },
+      {
+        path: '/system',
+        element: <SystemPage />,
       },
       {
         path: '/projects/:projectId',

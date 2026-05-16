@@ -23,7 +23,21 @@ export function MetricChart({ title, series, type = 'line', area = false, onRead
     chart.setOption({
       animation: false,
       color: ['#2563eb'],
-      grid: { left: 44, right: 16, top: 16, bottom: 30 },
+      dataZoom: [
+        { type: 'inside', xAxisIndex: 0, filterMode: 'none' },
+        { type: 'slider', xAxisIndex: 0, filterMode: 'none', height: 18, bottom: 8 },
+      ],
+      grid: { left: 44, right: 16, top: 16, bottom: 48 },
+      toolbox: {
+        feature: {
+          dataZoom: { yAxisIndex: false },
+          restore: {},
+        },
+        iconStyle: { borderColor: '#667085' },
+        itemSize: 14,
+        right: 4,
+        top: 0,
+      },
       tooltip: { trigger: 'axis', confine: true },
       xAxis: {
         type: 'category',

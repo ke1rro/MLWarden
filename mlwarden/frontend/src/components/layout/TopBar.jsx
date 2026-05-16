@@ -22,10 +22,11 @@ export function TopBar({ breadcrumbs }) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
   const notificationRef = useRef(null)
+  const searchRef = useRef(null)
   const userRef = useRef(null)
 
   useEffect(() => {
-    if (!isHistoryOpen && !isUserMenuOpen) return undefined
+    if (!isHistoryOpen && !isUserMenuOpen && !isSearchOpen) return undefined
 
     function handlePointerDown(event) {
       if (isHistoryOpen && !notificationRef.current?.contains(event.target)) {
@@ -34,11 +35,14 @@ export function TopBar({ breadcrumbs }) {
       if (isUserMenuOpen && !userRef.current?.contains(event.target)) {
         setIsUserMenuOpen(false)
       }
+      if (isSearchOpen && !searchRef.current?.contains(event.target)) {
+        setIsSearchOpen(false)
+      }
     }
 
     document.addEventListener('pointerdown', handlePointerDown)
     return () => document.removeEventListener('pointerdown', handlePointerDown)
-  }, [isHistoryOpen, isUserMenuOpen])
+  }, [isHistoryOpen, isSearchOpen, isUserMenuOpen])
 
   function handleToggleHistory() {
     setIsHistoryOpen((current) => !current)
@@ -61,16 +65,27 @@ export function TopBar({ breadcrumbs }) {
       <Logo className="topbar-logo" />
       <Breadcrumbs items={breadcrumbs} />
       <div className="topbar-actions">
-        <form className="global-search" onSubmit={handleSearchSubmit}>
-          <Search size={15} />
-          <input
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            onFocus={() => setIsSearchOpen(true)}
-            type="search"
-            placeholder="Search workspace"
-          />
-        </form>
+        <div className="global-search-wrap" ref={searchRef}>
+          <form className="global-search" onSubmit={handleSearchSubmit}>
+            <Search size={15} />
+            <input
+              value={searchQuery}
+              onChange={(event) => {
+                setSearchQuery(event.target.value)
+                setIsSearchOpen(true)
+              }}
+              onFocus={() => setIsSearchOpen(true)}
+              type="search"
+              placeholder="Search workspace"
+            />
+          </form>
+          {isSearchOpen ? (
+            <GlobalSearchModal
+              query={searchQuery}
+              onClose={() => setIsSearchOpen(false)}
+            />
+          ) : null}
+        </div>
         <div className="notification-menu" ref={notificationRef}>
           <button
             aria-expanded={isHistoryOpen}
@@ -117,12 +132,6 @@ export function TopBar({ breadcrumbs }) {
           ) : null}
         </div>
       </div>
-      {isSearchOpen ? (
-        <GlobalSearchModal
-          initialQuery={searchQuery}
-          onClose={() => setIsSearchOpen(false)}
-        />
-      ) : null}
       {isHelpOpen ? (
         <Modal
           title="MLWarden SDK guide"
@@ -134,26 +143,25 @@ export function TopBar({ breadcrumbs }) {
           <div className="help-guide">
             <section>
               <h3>1. Configure the client</h3>
-              <pre>{`from mlwarden import MLWardenClient
+              <pre>{`from mlwarden import Tracker
 
-client = MLWardenClient(
+tracker = Tracker(
     base_url="http://localhost:8000",
     api_key="dev-api-key",
+    project="demo-project",
 )`}</pre>
             </section>
             <section>
               <h3>2. Create a project and run</h3>
-              <pre>{`project = client.project("my-project")
-run = project.create_run(
-    name="baseline",
-    tags=["dev", "cnn"],
-)`}</pre>
+              <pre>{`run = tracker.create_run(name="baseline", tags=["dev", "cnn"])
+run.start()
+run.define_panel("Validation loss", "val.loss", chart_type="area", size="lg")`}</pre>
             </section>
             <section>
               <h3>3. Log data</h3>
               <pre>{`run.log_metric("val.loss", 0.218, step=10)
 run.log_table("validation", [{"image": "001", "psnr": 30.4}])
-run.upload_artifact("model.pt", artifact_path="checkpoints/model.pt")
+run.log_artifact("model.pt", artifact_path="checkpoints/model.pt")
 run.finish(summary={"final_loss": 0.218})`}</pre>
             </section>
           </div>

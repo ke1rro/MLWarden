@@ -1,61 +1,34 @@
-import { useState } from 'react'
-import { Button } from '@/components/common/Button.jsx'
 import { PageHeader } from '@/components/common/PageHeader.jsx'
 import { AppLayout } from '@/components/layout/AppLayout.jsx'
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState({
-    instanceName: localStorage.getItem('mlwarden.instanceName') || 'MLWarden local',
-    density: localStorage.getItem('mlwarden.density') || 'comfortable',
-    showHints: localStorage.getItem('mlwarden.showHints') !== 'false',
-    reduceAnimations: localStorage.getItem('mlwarden.reduceAnimations') === 'true',
-  })
-  const [saved, setSaved] = useState(false)
-
-  function updateSetting(key, value) {
-    setSettings((current) => ({ ...current, [key]: value }))
-    setSaved(false)
-  }
-
-  function handleSave() {
-    localStorage.setItem('mlwarden.instanceName', settings.instanceName)
-    localStorage.setItem('mlwarden.density', settings.density)
-    localStorage.setItem('mlwarden.showHints', String(settings.showHints))
-    localStorage.setItem('mlwarden.reduceAnimations', String(settings.reduceAnimations))
-    setSaved(true)
-  }
-
   return (
     <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'Settings' }]}>
       <PageHeader
         title="Settings"
-        subtitle="Local UI preferences and read-only backend connection details."
-        actions={<Button onClick={handleSave}>{saved ? 'Saved' : 'Save settings'}</Button>}
+        subtitle="Read-only local runtime details for this MLWarden frontend."
       />
       <div className="settings-grid">
         <section className="panel settings-panel">
-          <h2>General</h2>
+          <h2>Frontend</h2>
           <label>
-            Instance name
-            <input value={settings.instanceName} onChange={(event) => updateSetting('instanceName', event.target.value)} />
+            Runtime
+            <input readOnly value="React JavaScript client" />
           </label>
           <label>
-            Density
-            <select value={settings.density} onChange={(event) => updateSetting('density', event.target.value)}>
-              <option value="comfortable">Comfortable</option>
-              <option value="compact">Compact</option>
-            </select>
+            Search
+            <input readOnly value="Projects, runs, charts, and artifacts" />
           </label>
         </section>
         <section className="panel settings-panel">
-          <h2>Interface</h2>
-          <label className="settings-toggle">
-            <input checked={settings.showHints} onChange={(event) => updateSetting('showHints', event.target.checked)} type="checkbox" />
-            Show empty-state hints
+          <h2>Charts</h2>
+          <label>
+            Rendering
+            <input readOnly value="ECharts SVG with zoom, pan, restore, PNG/SVG export" />
           </label>
-          <label className="settings-toggle">
-            <input checked={settings.reduceAnimations} onChange={(event) => updateSetting('reduceAnimations', event.target.checked)} type="checkbox" />
-            Reduce nonessential animations
+          <label>
+            Panels
+            <input readOnly value="SDK metadata first, inferred fallback panels when absent" />
           </label>
         </section>
         <section className="panel settings-panel">
@@ -76,7 +49,7 @@ export default function SettingsPage() {
             <input readOnly value="Configured by APP_ARTIFACT_ROOT on the backend" />
           </label>
           <label>
-            Chart/report exports
+            Chart exports
             <input readOnly value="Browser save picker with download fallback" />
           </label>
         </section>
