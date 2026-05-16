@@ -1,21 +1,14 @@
 import { Bell, CircleHelp, LogOut, Search, UserRound } from 'lucide-react'
-import { API_BASE_URL } from '@/api/client.js'
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '@/app/useAuth.js'
 import { useNotifications } from '@/app/useNotifications.js'
-import { Button } from '@/components/common/Button.jsx'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog.jsx'
 import { GlobalSearchModal } from '@/components/common/GlobalSearchModal.jsx'
 import { Breadcrumbs } from './Breadcrumbs.jsx'
 import { IconButton } from '@/components/common/IconButton.jsx'
 import { Logo } from '@/components/common/Logo.jsx'
-import { Modal } from '@/components/common/Modal.jsx'
 import { NotificationHistory } from '@/components/notifications/NotificationHistory.jsx'
-
-const base_url =
-  API_BASE_URL === ""
-    ? window.location.origin
-    : API_BASE_URL;
 
 export function TopBar({ breadcrumbs }) {
   const { user, logout } = useAuth()
@@ -23,7 +16,6 @@ export function TopBar({ breadcrumbs }) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [isHelpOpen, setIsHelpOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
   const notificationRef = useRef(null)
@@ -104,7 +96,9 @@ export function TopBar({ breadcrumbs }) {
           </button>
           {isHistoryOpen ? <NotificationHistory onClose={() => setIsHistoryOpen(false)} /> : null}
         </div>
-        <IconButton label="Help" icon={CircleHelp} onClick={() => setIsHelpOpen(true)} />
+        <Link aria-label="Help" className="icon-button" title="Help" to="/faq">
+          <CircleHelp size={16} />
+        </Link>
         <div className="user-menu" ref={userRef}>
           <button
             aria-expanded={isUserMenuOpen}
@@ -134,41 +128,6 @@ export function TopBar({ breadcrumbs }) {
           ) : null}
         </div>
       </div>
-      {isHelpOpen ? (
-        <Modal
-          title="MLWarden SDK guide"
-          description="Minimal Python client flow for sending local experiment data to this workspace."
-          onClose={() => setIsHelpOpen(false)}
-          footer={<Button variant="secondary" onClick={() => setIsHelpOpen(false)}>Close</Button>}
-          size="lg"
-        >
-          <div className="help-guide">
-            <section>
-              <h3>1. Configure the client</h3>
-              <pre>{`from mlwarden import Tracker
-
-tracker = Tracker(
-    base_url="${base_url}",
-    api_key="dev-api-key",
-    project="demo-project",
-)`}</pre>
-            </section>
-            <section>
-              <h3>2. Create a project and run</h3>
-              <pre>{`run = tracker.create_run(name="baseline", tags=["dev", "cnn"])
-run.start()
-run.define_panel("Validation loss", "val.loss", chart_type="area", size="lg")`}</pre>
-            </section>
-            <section>
-              <h3>3. Log data</h3>
-              <pre>{`run.log_metric("val.loss", 0.218, step=10)
-run.log_table("validation", [{"image": "001", "psnr": 30.4}])
-run.log_artifact("model.pt", artifact_path="checkpoints/model.pt")
-run.finish(summary={"final_loss": 0.218})`}</pre>
-            </section>
-          </div>
-        </Modal>
-      ) : null}
       {isLogoutConfirmOpen ? (
         <ConfirmDialog
           title="Log out?"

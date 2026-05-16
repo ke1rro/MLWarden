@@ -1,4 +1,4 @@
-import { Maximize2, Minimize2, X } from 'lucide-react'
+import { GripVertical, Maximize2, Minimize2, X } from 'lucide-react'
 import { ActionMenu } from '@/components/common/ActionMenu.jsx'
 import { IconButton } from '@/components/common/IconButton.jsx'
 
@@ -18,21 +18,21 @@ export function PanelCard({
     <article
       className={`chart-panel chart-panel-${size}`}
       data-search-text={title}
-      draggable={draggable}
       onDragOver={onDragOver}
-      onDragStart={onDragStart}
       onDrop={onDrop}
     >
       <header className="chart-panel-header">
         <h3>{title}</h3>
         <div>
+          {draggable ? <IconButton className="drag-handle" draggable icon={GripVertical} label={`Move ${title}`} onDragStart={onDragStart} /> : null}
           {onResize ? (
-            <>
-              <IconButton label={`Make ${title} smaller`} icon={Minimize2} onClick={() => onResize('sm')} />
-              <IconButton label={`Make ${title} larger`} icon={Maximize2} onClick={() => onResize('lg')} />
-            </>
+            <IconButton
+              label={size === 'lg' ? `Make ${title} smaller` : `Make ${title} larger`}
+              icon={size === 'lg' ? Minimize2 : Maximize2}
+              onClick={() => onResize(size === 'lg' ? 'md' : 'lg')}
+            />
           ) : null}
-          {onRemove ? <IconButton label={`Remove ${title}`} icon={X} onClick={onRemove} /> : null}
+          {onRemove ? <IconButton className="icon-button-compact" label={`Remove ${title}`} icon={X} onClick={onRemove} /> : null}
           <ActionMenu items={actions} />
         </div>
       </header>

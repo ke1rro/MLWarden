@@ -21,6 +21,8 @@ DEFAULT_BASE_URL = "http://localhost:8000"
 DEFAULT_API_KEY = "dev-api-key"
 DEFAULT_PROJECT = "demo-pytorch-tensorflow"
 DEFAULT_FRONTEND_URL = "http://localhost:5173"
+DEFAULT_USERNAME = "admin"
+DEFAULT_PASSWORD = "password"
 
 DEMO_TAGS = ["demo", "real-data", "sdk", "presentation"]
 
@@ -29,6 +31,8 @@ DEMO_TAGS = ["demo", "real-data", "sdk", "presentation"]
 class DemoConfig:
     base_url: str
     api_key: str
+    username: str
+    password: str
     project: str
     frontend_url: str
     outputs_dir: Path
@@ -40,6 +44,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--base-url", default=None, help="Backend URL.")
     parser.add_argument("--api-key", default=None, help="Worker API key.")
+    parser.add_argument("--username", default=None, help="UI username for token fallback.")
+    parser.add_argument("--password", default=None, help="UI password for token fallback.")
     parser.add_argument("--project", default=None, help="Project name to create/reuse.")
     parser.add_argument("--frontend-url", default=None, help="Frontend URL to print.")
     parser.add_argument(
@@ -64,6 +70,18 @@ def config_from_args(argv: list[str] | None = None) -> DemoConfig:
         or os.environ.get("MLWARDEN_API_KEY")
         or DEFAULT_API_KEY
     )
+    username = (
+        args.username
+        or os.environ.get("MINI_TRACKER_USERNAME")
+        or os.environ.get("MLWARDEN_USERNAME")
+        or DEFAULT_USERNAME
+    )
+    password = (
+        args.password
+        or os.environ.get("MINI_TRACKER_PASSWORD")
+        or os.environ.get("MLWARDEN_PASSWORD")
+        or DEFAULT_PASSWORD
+    )
     project = (
         args.project
         or os.environ.get("MINI_TRACKER_PROJECT")
@@ -77,10 +95,63 @@ def config_from_args(argv: list[str] | None = None) -> DemoConfig:
     return DemoConfig(
         base_url=base_url.rstrip("/"),
         api_key=api_key,
+        username=username,
+        password=password,
         project=project,
         frontend_url=frontend_url.rstrip("/"),
         outputs_dir=outputs_dir,
     )
+
+
+def auth_header(token: str | None) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"} if token else {}
+
+
+def token_is_accepted(base_url: str, token: str | None) -> bool:
+    if not token:
+        return False
+
+    import httpx
+
+    response = httpx.get(
+        f"{base_url}/api/projects",
+        headers=auth_header(token),
+        params={"limit": 1},
+        timeout=5.0,
+    )
+    if response.status_code == 401:
+        return False
+    response.raise_for_status()
+    return True
+
+
+def login_token(config: DemoConfig) -> str:
+    import httpx
+
+    response = httpx.post(
+        f"{config.base_url}/api/auth/login",
+        json={"username": config.username, "password": config.password},
+        timeout=5.0,
+    )
+    response.raise_for_status()
+    return str(response.json()["access_token"])
+
+
+def resolve_auth_token(config: DemoConfig) -> str:
+    try:
+        if token_is_accepted(config.base_url, config.api_key):
+            return config.api_key
+    except Exception:
+        pass
+
+    try:
+        return login_token(config)
+    except Exception as exc:
+        raise RuntimeError(
+            "Demo authentication failed. Set APP_API_KEY=dev-api-key before starting "
+            "the backend, pass --api-key with the configured key, or pass "
+            "--username/--password for a valid UI account."
+        ) from exc
 
 
 def make_tracker(config: DemoConfig):
@@ -88,7 +159,7 @@ def make_tracker(config: DemoConfig):
 
     return Tracker(
         base_url=config.base_url,
-        api_key=config.api_key,
+        api_key=resolve_auth_token(config),
         project=config.project,
         timeout=60.0,
     )

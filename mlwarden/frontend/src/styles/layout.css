@@ -226,6 +226,7 @@
 }
 
 .workspace {
+  align-content: start;
   display: grid;
   flex: 1;
   gap: var(--space-4);
@@ -334,6 +335,7 @@
 }
 
 .workspace-stack {
+  align-content: start;
   display: grid;
   gap: var(--space-3);
 }

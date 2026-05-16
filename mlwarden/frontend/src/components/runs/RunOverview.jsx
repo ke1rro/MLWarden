@@ -1,6 +1,12 @@
 import { MetricCard } from '@/components/common/MetricCard.jsx'
 import { JsonPreview } from '@/components/common/JsonPreview.jsx'
 
+function formatTableNumber(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return value
+  if (Number.isInteger(value)) return value
+  return Number(value.toPrecision(6))
+}
+
 export function RunOverview({ run, metricSummaries }) {
   const primarySummary = metricSummaries.find((summary) => summary.name.toLowerCase().includes('best')) || metricSummaries[0]
   const primaryValue = primarySummary ? (primarySummary.max ?? primarySummary.latest ?? 'n/a') : 'n/a'
@@ -39,9 +45,9 @@ export function RunOverview({ run, metricSummaries }) {
               {metricSummaries.map((summary) => (
                 <tr key={summary.name}>
                   <td>{summary.name}</td>
-                  <td>{summary.latest}</td>
-                  <td>{summary.min}</td>
-                  <td>{summary.max}</td>
+                  <td title={String(summary.latest)}>{formatTableNumber(summary.latest)}</td>
+                  <td title={String(summary.min)}>{formatTableNumber(summary.min)}</td>
+                  <td title={String(summary.max)}>{formatTableNumber(summary.max)}</td>
                   <td>{summary.count}</td>
                 </tr>
               ))}

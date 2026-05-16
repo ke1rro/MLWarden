@@ -1,7 +1,21 @@
 export const AUTH_STORAGE_KEY = 'mlwarden.auth'
 
-const DEV_FALLBACK_API = 'http://localhost:8000'
-const DEV_FALLBACK_WS = 'ws://localhost:8000'
+function defaultApiBaseUrl() {
+  if (typeof window === 'undefined') return 'http://localhost:8000'
+  const { hostname, origin, protocol } = window.location
+  const isViteDevServer = /^517\d$/.test(window.location.port)
+  if (!isViteDevServer) return origin
+  return `${protocol}//${hostname || 'localhost'}:8000`
+}
+
+function defaultWsBaseUrl() {
+  const apiUrl = new URL(defaultApiBaseUrl())
+  apiUrl.protocol = apiUrl.protocol === 'https:' ? 'wss:' : 'ws:'
+  return apiUrl.toString().replace(/\/$/, '')
+}
+
+const DEV_FALLBACK_API = defaultApiBaseUrl()
+const DEV_FALLBACK_WS = defaultWsBaseUrl()
 
 const hasApiEnv = Object.prototype.hasOwnProperty.call(import.meta.env, 'VITE_API_BASE_URL')
 const hasWsEnv = Object.prototype.hasOwnProperty.call(import.meta.env, 'VITE_WS_BASE_URL')
@@ -105,7 +119,10 @@ export async function apiRequest(path, options = {}) {
       body: requestBody,
     })
   } catch (error) {
-    throw new ApiClientError(error.message || 'Network request failed', { code: 'network_error' })
+    throw new ApiClientError(`Cannot reach MLWarden API at ${API_BASE_URL}. Start the backend server and retry.`, {
+      code: 'network_error',
+      details: { cause: error.message || 'Network request failed' },
+    })
   }
 
   if (!response.ok) {

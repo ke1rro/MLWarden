@@ -41,7 +41,10 @@ export async function saveBlob(blob, filename, mimeType = blob.type || 'applicat
 }
 
 export function dataUrlToBlob(dataUrl) {
-  const [header, data] = dataUrl.split(',')
+  const separatorIndex = dataUrl.indexOf(',')
+  if (separatorIndex < 0) return new Blob([dataUrl], { type: 'application/octet-stream' })
+  const header = dataUrl.slice(0, separatorIndex)
+  const data = dataUrl.slice(separatorIndex + 1)
   const mimeType = header.match(/data:([^;]+)/)?.[1] || 'application/octet-stream'
   if (!header.includes(';base64')) {
     return new Blob([decodeURIComponent(data)], { type: mimeType })

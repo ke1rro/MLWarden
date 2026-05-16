@@ -139,6 +139,19 @@
   padding: 7px 10px;
 }
 
+.builder-panel input,
+.builder-panel select,
+.builder-panel textarea {
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+.builder-panel textarea,
+.settings-form-grid textarea {
+  resize: none;
+}
+
 .settings-toggle {
   align-items: center;
   display: flex;
@@ -223,6 +236,9 @@
 
 .metric-card strong {
   font-size: 22px;
+  line-height: 1.1;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .status-badge {
@@ -717,6 +733,60 @@
   gap: var(--space-2);
 }
 
+.settings-form-grid label {
+  align-items: center;
+  color: var(--color-muted);
+  display: grid;
+  font-size: 12px;
+  font-weight: 650;
+  gap: var(--space-3);
+  grid-template-columns: 140px minmax(0, 1fr);
+}
+
+.settings-form-grid input,
+.settings-form-grid select,
+.settings-form-grid textarea {
+  width: 100%;
+}
+
+.faq-page {
+  display: grid;
+  gap: var(--space-4);
+  justify-self: center;
+  max-width: 960px;
+  width: 100%;
+}
+
+.faq-section,
+.faq-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.faq-code {
+  background: #0f172a;
+  border-radius: var(--radius-sm);
+  color: #dbeafe;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 0;
+  overflow: auto;
+  padding: var(--space-3);
+  white-space: pre-wrap;
+}
+
+.faq-item h2 {
+  font-size: 17px;
+  margin-bottom: var(--space-2);
+}
+
+.faq-item p {
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+
 .project-settings-panel,
 .settings-summary-card {
   display: grid;
@@ -796,6 +866,12 @@
 @media (max-width: 640px) {
   .metric-grid,
   .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-form-grid label {
+    align-items: stretch;
+    gap: var(--space-1);
     grid-template-columns: 1fr;
   }
 }

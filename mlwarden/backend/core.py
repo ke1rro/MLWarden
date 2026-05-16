@@ -35,6 +35,7 @@ JSON_FIELDS = {
     "artifacts": {"metadata"},
     "events": {"payload"},
     "chart_configs": {"config"},
+    "run_comparisons": {"run_ids", "chart_settings"},
 }
 
 
@@ -337,6 +338,18 @@ def init_db() -> None:
         name TEXT NOT NULL,
         chart_type TEXT NOT NULL,
         config TEXT NOT NULL,
+        created_by TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS run_comparisons (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        run_ids TEXT NOT NULL,
+        primary_metric TEXT,
+        x_axis TEXT NOT NULL,
+        chart_settings TEXT NOT NULL,
         created_by TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL

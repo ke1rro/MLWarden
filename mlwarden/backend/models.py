@@ -117,6 +117,31 @@ class ChartUpdate(FlexibleModel):
     config: JsonObject | None = None
 
 
+class RunComparisonCreate(FlexibleModel):
+    name: str
+    run_ids: list[str] = Field(default_factory=list)
+    primary_metric: str | None = None
+    x_axis: Literal["step", "epoch", "timestamp"] = "step"
+    chart_settings: JsonObject = Field(default_factory=dict)
+
+
+class RunComparisonUpdate(FlexibleModel):
+    name: str | None = None
+    run_ids: list[str] | None = None
+    primary_metric: str | None = None
+    x_axis: Literal["step", "epoch", "timestamp"] | None = None
+    chart_settings: JsonObject | None = None
+
+
+class RunCompareRequest(FlexibleModel):
+    run_ids: list[str] = Field(default_factory=list)
+    metrics: list[str] = Field(default_factory=list)
+    x_axis: Literal["step", "epoch", "timestamp"] = "step"
+    smoothing: float = 0
+    aggregation: Literal["none", "mean", "median", "min", "max"] = "none"
+    metric_direction: Literal["auto", "maximize", "minimize"] = "auto"
+
+
 class ErrorDetails(FlexibleModel):
     code: str
     message: str

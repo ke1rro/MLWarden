@@ -6,8 +6,9 @@ import { Modal } from '@/components/common/Modal.jsx'
 import { SearchInput } from '@/components/common/SearchInput.jsx'
 import { Toolbar } from '@/components/common/Toolbar.jsx'
 import { IconButton } from '@/components/common/IconButton.jsx'
+import { ChartBuilder } from '@/components/charts/ChartBuilder.jsx'
 import { ChartGrid } from '@/components/charts/ChartGrid.jsx'
-import { dataUrlToBlob, saveBlob } from '@/shared/downloads.js'
+import { exportChart } from '@/components/charts/chartExport.js'
 
 function matchesPanelQuery(panel, query) {
   if (!query.trim()) return true
@@ -59,17 +60,16 @@ function MediaPanel({ image, imageUrl }) {
   )
 }
 
-export function RunChartsWorkspace({ metricSeries, run, images = [], getImageUrl }) {
+export function RunChartsWorkspace({ metricSeries, project, run, images = [], getImageUrl }) {
   const [query, setQuery] = useState('')
   const [panelOverrides, setPanelOverrides] = useState(null)
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const [builderMetric, setBuilderMetric] = useState('')
-  const [builderName, setBuilderName] = useState('')
   const [imageUrls, setImageUrls] = useState({})
   const chartRefs = useRef({})
   const metricNames = useMemo(() => Object.keys(metricSeries), [metricSeries])
   const sdkPanels = useMemo(() => normalizeSdkPanels(run, metricNames), [metricNames, run])
+  const builderRuns = useMemo(() => [run], [run])
   const panels = useMemo(() => {
     const selectedPanels = panelOverrides ?? createDefaultPanels(metricNames, sdkPanels)
     return selectedPanels.filter((panel) => metricNames.includes(panel.metric))
@@ -78,7 +78,6 @@ export function RunChartsWorkspace({ metricSeries, run, images = [], getImageUrl
     () => panels.filter((panel) => metricNames.includes(panel.metric) && matchesPanelQuery(panel, query)),
     [metricNames, panels, query],
   )
-  const availablePanels = metricNames.filter((metric) => !panels.some((panel) => panel.metric === metric))
   const mediaImages = useMemo(() => images.slice(0, 4), [images])
 
   useEffect(() => {
@@ -107,21 +106,21 @@ export function RunChartsWorkspace({ metricSeries, run, images = [], getImageUrl
     else delete chartRefs.current[panelId]
   }, [])
 
-  function handleAddPanel(event) {
-    event.preventDefault()
-    if (!builderMetric) return
+  function handleAddPanel(chartConfig) {
+    const metric = chartConfig.metric || chartConfig.yAxis
+    if (!metric) return
     setPanelOverrides((current) => [
       ...(current ?? panels),
       {
-        id: `${builderMetric}-${Date.now()}`,
-        metric: builderMetric,
-        title: builderName.trim() || builderMetric,
+        id: `${metric}-${Date.now()}`,
+        metric,
+        title: chartConfig.name || chartConfig.title || metric,
         size: 'md',
-        type: inferChartType(builderMetric),
+        type: chartConfig.chartType || inferChartType(metric),
+        area: chartConfig.area,
+        config: chartConfig,
       },
     ])
-    setBuilderMetric('')
-    setBuilderName('')
     setIsAddOpen(false)
   }
 
@@ -143,8 +142,7 @@ export function RunChartsWorkspace({ metricSeries, run, images = [], getImageUrl
     setPanelOverrides((current) =>
       (current ?? panels).map((panel) => {
         if (panel.id !== panelId) return panel
-        const nextSize = panel.size === requestedSize ? 'md' : requestedSize
-        return { ...panel, size: nextSize }
+        return { ...panel, size: requestedSize }
       }),
     )
   }
@@ -153,13 +151,13 @@ export function RunChartsWorkspace({ metricSeries, run, images = [], getImageUrl
     const chart = chartRefs.current[panelId]
     const panel = panels.find((item) => item.id === panelId)
     if (!chart || !panel) return
-    const dataUrl = chart.getDataURL({
-      type: format,
-      pixelRatio: 2,
-      backgroundColor: '#ffffff',
+    await exportChart({
+      chart,
+      option: chart.getOption(),
+      format,
+      filename: panel.title || panel.metric,
+      backgroundColor: panel.config?.backgroundColor || '#ffffff',
     })
-    const mimeType = format === 'svg' ? 'image/svg+xml' : 'image/png'
-    await saveBlob(dataUrlToBlob(dataUrl), `${panel.metric}.${format}`, mimeType)
   }
 
   if (!metricNames.length) {
@@ -171,7 +169,7 @@ export function RunChartsWorkspace({ metricSeries, run, images = [], getImageUrl
       <Toolbar>
         <SearchInput value={query} onChange={setQuery} placeholder="Search panels" />
         <IconButton label="Filter panels" icon={SlidersHorizontal} onClick={() => setIsFilterOpen(true)} />
-        <Button disabled={!availablePanels.length} onClick={() => setIsAddOpen(true)}><Plus size={15} /> Add panel</Button>
+        <Button disabled={!metricNames.length} onClick={() => setIsAddOpen(true)}><Plus size={15} /> Add panel</Button>
       </Toolbar>
       {visiblePanels.length ? (
         <ChartGrid
@@ -200,28 +198,14 @@ export function RunChartsWorkspace({ metricSeries, run, images = [], getImageUrl
         </section>
       ) : null}
       {isAddOpen ? (
-        <Modal title="Chart builder" description="Create a local panel from SDK-logged metrics. Chart type is inferred from metric metadata/name." onClose={() => setIsAddOpen(false)}>
-          <form className="settings-form-grid" onSubmit={handleAddPanel}>
-            <label>
-              Panel name
-              <input value={builderName} onChange={(event) => setBuilderName(event.target.value)} placeholder={builderMetric || 'Validation loss'} />
-            </label>
-            <label>
-              Metric
-              <select value={builderMetric} onChange={(event) => setBuilderMetric(event.target.value)} required>
-                <option value="">Choose metric</option>
-                {availablePanels.map((metric) => <option key={metric} value={metric}>{metric}</option>)}
-              </select>
-            </label>
-            <label>
-              SDK-defined chart type
-              <input readOnly value={builderMetric ? inferChartType(builderMetric) : 'Choose a metric'} />
-            </label>
-            <div className="button-row">
-              <Button type="submit">Add chart panel</Button>
-              <Button onClick={() => setIsAddOpen(false)} variant="secondary">Cancel</Button>
-            </div>
-          </form>
+        <Modal title="Chart builder" description="Create a local run panel from SDK-logged metrics." onClose={() => setIsAddOpen(false)} size="lg">
+          <ChartBuilder
+            project={project}
+            runs={builderRuns}
+            initialMetricSeries={metricSeries}
+            mode="panel"
+            onAddPanel={handleAddPanel}
+          />
         </Modal>
       ) : null}
       {isFilterOpen ? (

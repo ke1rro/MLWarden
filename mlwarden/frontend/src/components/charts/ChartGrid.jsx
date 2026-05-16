@@ -1,13 +1,26 @@
 import { Download } from 'lucide-react'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { MetricChart } from './MetricChart.jsx'
 import { PanelCard } from './PanelCard.jsx'
+import { buildChartOption } from './chartOptions.js'
 
 function normalizePanel(panel) {
   return typeof panel === 'string' ? { id: panel, metric: panel, size: 'md', type: 'line' } : panel
 }
 
 function ChartGridPanel({ panel, metricSeries, onChartReady, onExportPanel, onRemovePanel, onReorderPanel, onResizePanel }) {
+  const metric = panel.metric || panel.config?.metric || panel.config?.yAxis
+  const series = metricSeries[metric]
+  const option = useMemo(() => buildChartOption({
+    chartType: panel.type || panel.chartType || panel.config?.chartType || 'line',
+    title: panel.title || metric,
+    yAxis: panel.config?.yAxis || metric,
+    yAxisLabel: panel.config?.yAxisLabel || metric,
+    area: panel.area ?? panel.config?.area ?? metric?.includes('loss'),
+    ...(panel.config || {}),
+    showTitle: false,
+  }, series), [metric, panel, series])
+
   const handleChartReady = useCallback((chart) => {
     onChartReady?.(panel.id, chart)
   }, [onChartReady, panel.id])
@@ -20,7 +33,10 @@ function ChartGridPanel({ panel, metricSeries, onChartReady, onExportPanel, onRe
       ]}
       draggable={Boolean(onReorderPanel)}
       onDragOver={(event) => event.preventDefault()}
-      onDragStart={(event) => event.dataTransfer.setData('text/plain', panel.id)}
+      onDragStart={(event) => {
+        event.dataTransfer.effectAllowed = 'move'
+        event.dataTransfer.setData('text/plain', panel.id)
+      }}
       onDrop={(event) => {
         event.preventDefault()
         onReorderPanel?.(event.dataTransfer.getData('text/plain'), panel.id)
@@ -28,13 +44,10 @@ function ChartGridPanel({ panel, metricSeries, onChartReady, onExportPanel, onRe
       onRemove={() => onRemovePanel(panel.id)}
       onResize={(size) => onResizePanel?.(panel.id, size)}
       size={panel.size || 'md'}
-      title={panel.title || panel.metric}
+      title={panel.title || metric}
     >
       <MetricChart
-        title={panel.title || panel.metric}
-        series={metricSeries[panel.metric]}
-        type={panel.type || 'line'}
-        area={panel.area ?? panel.metric.includes('loss')}
+        option={option}
         onReady={handleChartReady}
       />
     </PanelCard>

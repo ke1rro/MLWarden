@@ -20,11 +20,65 @@ function RunActions({ run, onRunAction }) {
   )
 }
 
-export function RunTable({ runs, onRunAction }) {
+export function RunTable({
+  runs,
+  onRunAction,
+  selectable = false,
+  selectedRunIds = [],
+  disabledRunIds = [],
+  runColorMap = {},
+  onRunSelect,
+  compact = false,
+}) {
   const showProject = runs.some((run) => run.projectName)
+  const selectedSet = new Set(selectedRunIds)
+  const disabledSet = new Set(disabledRunIds)
+  const renderCheckbox = (run, index, isSelected, isDisabled) => (
+    <input
+      checked={isSelected}
+      disabled={isDisabled}
+      onChange={() => {}}
+      onClick={(event) => onRunSelect?.(run, event, index)}
+      type="checkbox"
+    />
+  )
 
   if (!runs.length) {
     return <EmptyState title="No runs match these filters." message="Adjust the filters or start a worker run." />
+  }
+
+  if (compact) {
+    return (
+      <div className="table-shell compact-runs">
+        <table className="data-table">
+          <thead>
+            <tr>
+              {selectable ? <th className="run-select-heading">Select</th> : null}
+              <th>Run</th>
+              <th>Metric</th>
+            </tr>
+          </thead>
+          <tbody>
+            {runs.map((run, index) => {
+              const isSelected = selectedSet.has(run.id)
+              const isDisabled = disabledSet.has(run.id)
+              return (
+                <tr className={`${isSelected ? 'is-selected' : ''} ${isDisabled ? 'is-disabled' : ''}`} data-search-text={`${run.name} ${run.status} ${run.tags.join(' ')}`} key={run.id}>
+                  {selectable ? <td className="run-select-cell">{renderCheckbox(run, index, isSelected, isDisabled)}</td> : null}
+                  <td>
+                    <Link className="table-link run-name-link" to={`/runs/${run.id}`}>
+                      {runColorMap[run.id] ? <span className="run-color-dot" style={{ background: runColorMap[run.id] }} /> : null}
+                      {run.name}
+                    </Link>
+                  </td>
+                  <td>{run.bestPsnr ?? run.finalLoss ?? 'n/a'}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    )
   }
 
   return (
@@ -32,6 +86,7 @@ export function RunTable({ runs, onRunAction }) {
       <table className="data-table">
         <thead>
           <tr>
+            {selectable ? <th className="run-select-heading">Select</th> : null}
             <th>Status</th>
             <th>Run name</th>
             {showProject ? <th>Project</th> : null}
@@ -45,11 +100,20 @@ export function RunTable({ runs, onRunAction }) {
           </tr>
         </thead>
         <tbody>
-          {runs.map((run) => (
-            <tr data-search-text={`${run.name} ${run.projectName || ''} ${run.status} ${run.tags.join(' ')}`} key={run.id}>
+          {runs.map((run, index) => {
+            const isSelected = selectedSet.has(run.id)
+            const isDisabled = disabledSet.has(run.id)
+            return (
+            <tr className={`${isSelected ? 'is-selected' : ''} ${isDisabled ? 'is-disabled' : ''}`} data-search-text={`${run.name} ${run.projectName || ''} ${run.status} ${run.tags.join(' ')}`} key={run.id}>
+              {selectable ? (
+                <td className="run-select-cell">
+                  {renderCheckbox(run, index, isSelected, isDisabled)}
+                </td>
+              ) : null}
               <td><StatusBadge status={run.status} /></td>
               <td>
                 <Link className="table-link" to={`/runs/${run.id}`}>
+                  {runColorMap[run.id] ? <span className="run-color-dot" style={{ background: runColorMap[run.id] }} /> : null}
                   {run.name}
                 </Link>
               </td>
@@ -72,7 +136,8 @@ export function RunTable({ runs, onRunAction }) {
               <td>{run.worker}</td>
               <td><RunActions run={run} onRunAction={onRunAction} /></td>
             </tr>
-          ))}
+            )
+          })}
         </tbody>
       </table>
     </div>

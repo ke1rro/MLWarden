@@ -10,6 +10,7 @@ import RunsPage from '@/routes/RunsPage.jsx'
 import WorkspacePage from '@/routes/WorkspacePage.jsx'
 import ArtifactsPage from '@/routes/ArtifactsPage.jsx'
 import SystemPage from '@/routes/SystemPage.jsx'
+import FaqPage from '@/routes/FaqPage.jsx'
 import NotFoundPage from '@/routes/NotFoundPage.jsx'
 import OfflinePage from '@/routes/OfflinePage.jsx'
 import RouteErrorPage from '@/routes/RouteErrorPage.jsx'
@@ -24,6 +25,11 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: '/faq',
+    element: <FaqPage />,
     errorElement: <RouteErrorPage />,
   },
   {

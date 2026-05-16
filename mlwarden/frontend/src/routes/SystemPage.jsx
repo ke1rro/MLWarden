@@ -2,6 +2,7 @@ import { Activity, Cpu, Database, HardDrive } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { getSystemMetrics } from '@/api/system.js'
 import { MetricChart } from '@/components/charts/MetricChart.jsx'
+import { buildChartOption } from '@/components/charts/chartOptions.js'
 import { MetricCard } from '@/components/common/MetricCard.jsx'
 import { ErrorState } from '@/components/common/ErrorState.jsx'
 import { LoadingState } from '@/components/common/LoadingState.jsx'
@@ -29,9 +30,39 @@ function seriesFor(history, metricId) {
     .map((sample) => {
       const metric = sample.metrics.find((item) => item.id === metricId)
       if (!metric?.available) return null
-      return { step: sample.label, value: metric.value }
+      return { step: sample.label, timestamp: sample.label, value: metric.value }
     })
     .filter(Boolean)
+}
+
+function unitLabel(unit) {
+  if (unit === 'C') return '°C'
+  return unit || 'value'
+}
+
+function systemChartOption(metric, series, type) {
+  const unit = unitLabel(metric.unit)
+  return buildChartOption({
+    chartType: type,
+    title: metric.label,
+    showTitle: false,
+    subtitle: metric.detail || 'host telemetry',
+    metric: metric.id,
+    yAxis: metric.id,
+    xAxis: 'timestamp',
+    xAxisLabel: 'Time',
+    yAxisLabel: `${metric.label} (${unit})`,
+    valueUnit: unit,
+    showLegend: false,
+    showTooltip: true,
+    color: areaMetrics.has(metric.id) ? '#2563eb' : '#0f766e',
+    fontSize: 12,
+    lineWidth: 2,
+    pointSize: 4,
+    smooth: true,
+    area: areaMetrics.has(metric.id),
+    grid: { left: 64, right: 24, top: 66, bottom: 58 },
+  }, series)
 }
 
 export default function SystemPage() {
@@ -93,13 +124,14 @@ export default function SystemPage() {
           const Icon = iconByMetric[metric.id] || Activity
           const type = areaMetrics.has(metric.id) ? 'area' : 'line'
           const series = seriesFor(history, metric.id)
+          const option = systemChartOption(metric, series, type)
           return (
             <article className="chart-panel system-metric-panel" key={metric.id}>
               <header className="chart-panel-header">
                 <h3>{metric.label}</h3>
                 <Icon size={16} />
               </header>
-              <MetricChart title={metric.label} series={series} type={type} area={type === 'area'} />
+              <MetricChart option={option} />
             </article>
           )
         })}

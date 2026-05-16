@@ -21,9 +21,7 @@ def list_project_rows(include_deleted: bool = False) -> list[dict[str, Any]]:
     if include_deleted:
         rows = fetch_all("SELECT * FROM projects ORDER BY created_at DESC")
     else:
-        rows = fetch_all(
-            "SELECT * FROM projects WHERE deleted_at IS NULL ORDER BY created_at DESC"
-        )
+        rows = fetch_all("SELECT * FROM projects WHERE deleted_at IS NULL ORDER BY created_at DESC")
     return decode_rows("projects", rows)
 
 
@@ -91,9 +89,7 @@ def project_stats(project_id: str) -> dict[str, Any]:
 
 
 def get_project_row(project_id: str) -> dict[str, Any] | None:
-    return decode_row(
-        "projects", fetch_one("SELECT * FROM projects WHERE id = ?", (project_id,))
-    )
+    return decode_row("projects", fetch_one("SELECT * FROM projects WHERE id = ?", (project_id,)))
 
 
 def get_run_row(run_id: str) -> dict[str, Any] | None:
@@ -228,9 +224,7 @@ def upsert_run_params(run_id: str, params: dict[str, Any]) -> None:
 
 
 def list_run_params(run_id: str) -> list[dict[str, Any]]:
-    return fetch_all(
-        "SELECT * FROM run_params WHERE run_id = ? ORDER BY key", (run_id,)
-    )
+    return fetch_all("SELECT * FROM run_params WHERE run_id = ? ORDER BY key", (run_id,))
 
 
 def insert_event(event: dict[str, Any]) -> None:
@@ -257,9 +251,7 @@ def list_run_event_rows(
         "SELECT * FROM events WHERE run_id = ? ORDER BY created_at ASC LIMIT ? OFFSET ?",
         (run_id, limit, offset),
     )
-    total = fetch_one(
-        "SELECT COUNT(*) AS total FROM events WHERE run_id = ?", (run_id,)
-    )
+    total = fetch_one("SELECT COUNT(*) AS total FROM events WHERE run_id = ?", (run_id,))
     return decode_rows("events", rows), int(total["total"] if total else 0)
 
 
@@ -290,14 +282,10 @@ def insert_metric(metric: dict[str, Any]) -> None:
 
 
 def get_metric_summary_row(run_id: str, name: str) -> dict[str, Any] | None:
-    return fetch_one(
-        "SELECT * FROM metric_summaries WHERE run_id = ? AND name = ?", (run_id, name)
-    )
+    return fetch_one("SELECT * FROM metric_summaries WHERE run_id = ? AND name = ?", (run_id, name))
 
 
-def increment_metric_summary(
-    run_id: str, name: str, value: float, step: int | None
-) -> None:
+def increment_metric_summary(run_id: str, name: str, value: float, step: int | None) -> None:
     now = utc_timestamp()
     if get_metric_summary_row(run_id, name):
         execute(
@@ -345,9 +333,7 @@ def metric_rows(run_id: str, names: list[str]) -> list[dict[str, Any]]:
 
 
 def metric_summary_rows(run_id: str) -> list[dict[str, Any]]:
-    return fetch_all(
-        "SELECT * FROM metric_summaries WHERE run_id = ? ORDER BY name", (run_id,)
-    )
+    return fetch_all("SELECT * FROM metric_summaries WHERE run_id = ? ORDER BY name", (run_id,))
 
 
 def insert_log(log: dict[str, Any]) -> None:
@@ -391,9 +377,7 @@ def log_rows(
 def table_rows_for_run(run_id: str) -> list[dict[str, Any]]:
     tables = decode_rows(
         "tables_meta",
-        fetch_all(
-            "SELECT * FROM tables_meta WHERE run_id = ? ORDER BY name", (run_id,)
-        ),
+        fetch_all("SELECT * FROM tables_meta WHERE run_id = ? ORDER BY name", (run_id,)),
     )
     for table in tables:
         count = fetch_one(
@@ -476,9 +460,7 @@ def append_rows_to_table(table_id: str, rows: list[dict[str, Any]]) -> None:
     execute("UPDATE tables_meta SET updated_at = ? WHERE id = ?", (now, table_id))
 
 
-def paged_table_rows(
-    table_id: str, *, limit: int, offset: int
-) -> tuple[list[dict[str, Any]], int]:
+def paged_table_rows(table_id: str, *, limit: int, offset: int) -> tuple[list[dict[str, Any]], int]:
     rows = fetch_all(
         """
         SELECT * FROM table_rows
@@ -488,9 +470,7 @@ def paged_table_rows(
         """,
         (table_id, limit, offset),
     )
-    total = fetch_one(
-        "SELECT COUNT(*) AS total FROM table_rows WHERE table_id = ?", (table_id,)
-    )
+    total = fetch_one("SELECT COUNT(*) AS total FROM table_rows WHERE table_id = ?", (table_id,))
     return decode_rows("table_rows", rows), int(total["total"] if total else 0)
 
 
@@ -521,23 +501,17 @@ def insert_image(image: dict[str, Any]) -> None:
     )
 
 
-def image_rows(
-    run_id: str, *, limit: int, offset: int
-) -> tuple[list[dict[str, Any]], int]:
+def image_rows(run_id: str, *, limit: int, offset: int) -> tuple[list[dict[str, Any]], int]:
     rows = fetch_all(
         "SELECT * FROM images WHERE run_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
         (run_id, limit, offset),
     )
-    total = fetch_one(
-        "SELECT COUNT(*) AS total FROM images WHERE run_id = ?", (run_id,)
-    )
+    total = fetch_one("SELECT COUNT(*) AS total FROM images WHERE run_id = ?", (run_id,))
     return decode_rows("images", rows), int(total["total"] if total else 0)
 
 
 def get_image_row(image_id: str) -> dict[str, Any] | None:
-    return decode_row(
-        "images", fetch_one("SELECT * FROM images WHERE id = ?", (image_id,))
-    )
+    return decode_row("images", fetch_one("SELECT * FROM images WHERE id = ?", (image_id,)))
 
 
 def insert_artifact(artifact: dict[str, Any]) -> None:
@@ -564,16 +538,12 @@ def insert_artifact(artifact: dict[str, Any]) -> None:
     )
 
 
-def artifact_rows(
-    run_id: str, *, limit: int, offset: int
-) -> tuple[list[dict[str, Any]], int]:
+def artifact_rows(run_id: str, *, limit: int, offset: int) -> tuple[list[dict[str, Any]], int]:
     rows = fetch_all(
         "SELECT * FROM artifacts WHERE run_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
         (run_id, limit, offset),
     )
-    total = fetch_one(
-        "SELECT COUNT(*) AS total FROM artifacts WHERE run_id = ?", (run_id,)
-    )
+    total = fetch_one("SELECT COUNT(*) AS total FROM artifacts WHERE run_id = ?", (run_id,))
     return decode_rows("artifacts", rows), int(total["total"] if total else 0)
 
 
@@ -638,6 +608,71 @@ def update_chart_row(chart_id: str, updated: dict[str, Any]) -> None:
 
 def delete_chart_row(chart_id: str) -> None:
     execute("DELETE FROM chart_configs WHERE id = ?", (chart_id,))
+
+
+def run_comparison_rows(project_id: str) -> list[dict[str, Any]]:
+    return decode_rows(
+        "run_comparisons",
+        fetch_all(
+            "SELECT * FROM run_comparisons WHERE project_id = ? ORDER BY updated_at DESC",
+            (project_id,),
+        ),
+    )
+
+
+def insert_run_comparison(comparison: dict[str, Any]) -> None:
+    execute(
+        """
+        INSERT INTO run_comparisons (
+            id, project_id, name, run_ids, primary_metric, x_axis, chart_settings,
+            created_by, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            comparison["id"],
+            comparison["project_id"],
+            comparison["name"],
+            json_dumps(comparison["run_ids"]),
+            comparison["primary_metric"],
+            comparison["x_axis"],
+            json_dumps(comparison["chart_settings"]),
+            comparison["created_by"],
+            comparison["created_at"],
+            comparison["updated_at"],
+        ),
+    )
+
+
+def get_run_comparison_row(comparison_id: str) -> dict[str, Any] | None:
+    return decode_row(
+        "run_comparisons",
+        fetch_one("SELECT * FROM run_comparisons WHERE id = ?", (comparison_id,)),
+    )
+
+
+def update_run_comparison_row(comparison_id: str, updated: dict[str, Any]) -> None:
+    execute(
+        """
+        UPDATE run_comparisons
+        SET name = ?, run_ids = ?, primary_metric = ?, x_axis = ?,
+            chart_settings = ?, updated_at = ?
+        WHERE id = ?
+        """,
+        (
+            updated["name"],
+            json_dumps(updated["run_ids"]),
+            updated["primary_metric"],
+            updated["x_axis"],
+            json_dumps(updated["chart_settings"]),
+            updated["updated_at"],
+            comparison_id,
+        ),
+    )
+
+
+def delete_run_comparison_row(comparison_id: str) -> None:
+    execute("DELETE FROM run_comparisons WHERE id = ?", (comparison_id,))
 
 
 __all__ = [name for name in globals() if not name.startswith("_")]

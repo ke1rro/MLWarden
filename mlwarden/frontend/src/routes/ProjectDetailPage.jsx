@@ -1,10 +1,11 @@
 import { Plus, Settings } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { adaptProject, adaptRun } from '@/api/adapters.js'
 import { listCharts } from '@/api/charts.js'
 import { getMetricSummary, getMetrics } from '@/api/metrics.js'
 import { getProject } from '@/api/projects.js'
+import { listRunComparisons } from '@/api/runComparisons.js'
 import { cancelRun, createRun, failRun, finishRun, listRuns, startRun } from '@/api/runs.js'
 import { useNotifications } from '@/app/useNotifications.js'
 import { Button } from '@/components/common/Button.jsx'
@@ -17,9 +18,12 @@ import { SearchInput } from '@/components/common/SearchInput.jsx'
 import { Toolbar } from '@/components/common/Toolbar.jsx'
 import { AppLayout } from '@/components/layout/AppLayout.jsx'
 import { RunTable } from '@/components/runs/RunTable.jsx'
+import { RunComparisonWorkspace } from '@/components/runs/RunComparisonWorkspace.jsx'
 import { MetricChart } from '@/components/charts/MetricChart.jsx'
+import { buildChartOption, normalizeChartConfig } from '@/components/charts/chartOptions.js'
 
 const statusOptions = ['created', 'running', 'finished', 'failed', 'cancelled']
+const runPalette = ['#2563eb', '#16a34a', '#ef4444', '#7c3aed', '#db2777', '#a16207', '#84cc16', '#0891b2', '#f59e0b', '#06b6d4']
 const refreshEvents = new Set([
   'backend.connected',
   'run.created',
@@ -82,13 +86,14 @@ function ProjectRunFilters({
 }
 
 function SavedChartPanel({ chart, previewSeries }) {
-  const metric = chart.config?.y_axis || chart.config?.metric || chart.name
-  const type = chart.chart_type || chart.type || 'line'
+  const config = normalizeChartConfig({ ...chart.config, name: chart.name, chartType: chart.chart_type || chart.type })
+  const metric = config.metric || config.yAxis || chart.name
+  const option = buildChartOption({ ...config, showTitle: false }, previewSeries[metric])
 
   return (
     <article className="chart-panel">
       <header className="chart-panel-header"><h3>{chart.name}</h3></header>
-      <MetricChart title={metric} series={previewSeries[metric]} type={type} area={type === 'area'} />
+      <MetricChart option={option} />
     </article>
   )
 }
@@ -116,9 +121,13 @@ function SavedChartsSection({ project, savedCharts, previewSeries }) {
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialSelectedRunIds = useMemo(() => (searchParams.get('runs') || '').split(',').map((item) => item.trim()).filter(Boolean), [searchParams])
   const [project, setProject] = useState(null)
   const [projectRuns, setProjectRuns] = useState([])
   const [savedCharts, setSavedCharts] = useState([])
+  const [savedComparisons, setSavedComparisons] = useState([])
+  const [runMetricNames, setRunMetricNames] = useState({})
   const [previewSeries, setPreviewSeries] = useState({})
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -131,29 +140,58 @@ export default function ProjectDetailPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [runForm, setRunForm] = useState({ name: '', description: '', tags: '' })
+  const [selectedRunIds, setSelectedRunIds] = useState(initialSelectedRunIds)
+  const [isComparisonActive, setIsComparisonActive] = useState(initialSelectedRunIds.length >= 2)
+  const [activeComparison, setActiveComparison] = useState(null)
+  const lastSelectedRunIndex = useRef(null)
   const { subscribe } = useNotifications()
+
+  const updateSelectedRunIds = useCallback((runIds) => {
+    const nextRunIds = [...new Set(runIds)]
+    setSelectedRunIds(nextRunIds)
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current)
+      if (nextRunIds.length) next.set('runs', nextRunIds.join(','))
+      else next.delete('runs')
+      return next
+    }, { replace: true })
+    if (nextRunIds.length < 2) setIsComparisonActive(false)
+  }, [setSearchParams])
 
   const loadProjectWorkspace = useCallback(async () => {
     setError('')
     try {
-      const [projectResponse, runsResponse, chartsResponse] = await Promise.all([
+      const [projectResponse, runsResponse, chartsResponse, comparisonsResponse] = await Promise.all([
         getProject(projectId),
         listRuns(projectId, { limit: 500 }),
         listCharts(projectId),
+        listRunComparisons(projectId),
       ])
       const nextProject = adaptProject(projectResponse)
       const nextRuns = (runsResponse.items || []).map((run) => adaptRun(run))
       setProject(nextProject)
       setProjectRuns(nextRuns)
       setSavedCharts(chartsResponse.items || [])
+      setSavedComparisons(comparisonsResponse.items || [])
+
+      const metricEntries = await Promise.all(nextRuns.map(async (run) => {
+        try {
+          const summary = await getMetricSummary(run.id)
+          return [run.id, (summary.items || []).map((item) => item.name)]
+        } catch {
+          return [run.id, []]
+        }
+      }))
+      const metricNameMap = Object.fromEntries(metricEntries)
+      setRunMetricNames(metricNameMap)
 
       if (nextRuns[0]) {
-        const summary = await getMetricSummary(nextRuns[0].id)
-        const names = (summary.items || []).map((item) => item.name)
+        const names = metricNameMap[nextRuns[0].id] || []
         const metrics = names.length ? await getMetrics(nextRuns[0].id, names) : { series: {} }
         setPreviewSeries(metrics.series || {})
       } else {
         setPreviewSeries({})
+        setRunMetricNames({})
       }
     } catch (err) {
       setError(err.message || 'Failed to load project.')
@@ -179,6 +217,16 @@ export default function ProjectDetailPage() {
     failed: projectRuns.filter((run) => run.status === 'failed').length,
   }), [projectRuns])
   const tags = ['all', ...new Set(projectRuns.flatMap((run) => run.tags || []))]
+  const selectableRunIds = useMemo(() => new Set(projectRuns.filter((run) => (runMetricNames[run.id] || []).length).map((run) => run.id)), [projectRuns, runMetricNames])
+  const disabledRunIds = useMemo(() => projectRuns.filter((run) => !selectableRunIds.has(run.id)).map((run) => run.id), [projectRuns, selectableRunIds])
+  const runColorMap = useMemo(() => Object.fromEntries(projectRuns.map((run, index) => [run.id, runPalette[index % runPalette.length]])), [projectRuns])
+  const sharedMetrics = useMemo(() => {
+    const metricSets = selectedRunIds
+      .map((runId) => new Set(runMetricNames[runId] || []))
+      .filter((metricSet) => metricSet.size)
+    if (metricSets.length < 2) return []
+    return [...metricSets[0]].filter((metric) => metricSets.every((metricSet) => metricSet.has(metric))).sort()
+  }, [runMetricNames, selectedRunIds])
   const filteredRuns = projectRuns.filter((run) => {
     const matchesStatus = status === 'all' || run.status === status
     const matchesTag = tag === 'all' || run.tags.includes(tag)
@@ -188,6 +236,36 @@ export default function ProjectDetailPage() {
     const beforeEnd = !endDate || (createdTime && createdTime <= new Date(`${endDate}T23:59:59`).getTime())
     return matchesStatus && matchesTag && matchesQuery && afterStart && beforeEnd
   })
+
+  function handleRunSelect(run, event, index) {
+    if (!selectableRunIds.has(run.id)) return
+    const shouldSelect = event.currentTarget.checked
+    let nextRunIds = selectedRunIds
+    if (event.shiftKey && lastSelectedRunIndex.current !== null) {
+      const start = Math.min(lastSelectedRunIndex.current, index)
+      const end = Math.max(lastSelectedRunIndex.current, index)
+      const rangeIds = filteredRuns.slice(start, end + 1).filter((item) => selectableRunIds.has(item.id)).map((item) => item.id)
+      nextRunIds = shouldSelect
+        ? [...new Set([...selectedRunIds, ...rangeIds])]
+        : selectedRunIds.filter((runId) => !rangeIds.includes(runId))
+    } else {
+      nextRunIds = shouldSelect ? [...selectedRunIds, run.id] : selectedRunIds.filter((runId) => runId !== run.id)
+    }
+    lastSelectedRunIndex.current = index
+    updateSelectedRunIds(nextRunIds)
+  }
+
+  function handleResetComparison() {
+    setActiveComparison(null)
+    setIsComparisonActive(false)
+    updateSelectedRunIds([])
+  }
+
+  function handleApplyComparison(comparison) {
+    setActiveComparison(comparison)
+    updateSelectedRunIds(comparison.run_ids || [])
+    setIsComparisonActive(true)
+  }
 
   async function handleCreateRun(event) {
     event.preventDefault()
@@ -252,6 +330,7 @@ export default function ProjectDetailPage() {
         actions={(
           <>
             <Button onClick={() => setIsCreateOpen((current) => !current)}><Plus size={15} /> New run</Button>
+            {selectedRunIds.length >= 2 ? <Button onClick={() => setIsComparisonActive(true)}>Combine Runs</Button> : null}
             <Link className="button button-secondary button-md" to={`/projects/${project.id}/charts`}>Open charts</Link>
             <Button onClick={() => setIsSettingsOpen(true)} variant="secondary"><Settings size={15} /> Settings</Button>
           </>
@@ -280,21 +359,87 @@ export default function ProjectDetailPage() {
       {error ? <ErrorState message={error} /> : null}
       <ProjectTags tags={project.tags} />
       <ProjectMetricSummary stats={projectStats} />
-      <ProjectRunFilters
-        query={query}
-        status={status}
-        tag={tag}
-        tags={tags}
-        startDate={startDate}
-        endDate={endDate}
-        onQueryChange={setQuery}
-        onStatusChange={setStatus}
-        onTagChange={setTag}
-        onStartDateChange={setStartDate}
-        onEndDateChange={setEndDate}
-      />
-      <RunTable runs={filteredRuns} onRunAction={handleRunAction} />
-      <SavedChartsSection project={project} savedCharts={savedCharts} previewSeries={previewSeries} />
+      {isComparisonActive ? (
+        <div className="project-comparison-layout">
+          <aside className="comparison-run-sidebar">
+            <div className="comparison-sidebar-heading">
+              <div>
+                <h2>Runs</h2>
+                <span>{projectRuns.length}</span>
+              </div>
+              <Button onClick={handleResetComparison} size="sm" variant="secondary">Reset</Button>
+            </div>
+            <ProjectRunFilters
+              query={query}
+              status={status}
+              tag={tag}
+              tags={tags}
+              startDate={startDate}
+              endDate={endDate}
+              onQueryChange={setQuery}
+              onStatusChange={setStatus}
+              onTagChange={setTag}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+            />
+            <RunTable
+              compact
+              disabledRunIds={disabledRunIds}
+              onRunSelect={handleRunSelect}
+              runColorMap={runColorMap}
+              runs={filteredRuns}
+              selectable
+              selectedRunIds={selectedRunIds}
+            />
+          </aside>
+          <RunComparisonWorkspace
+            activeComparison={activeComparison}
+            onApplyComparison={handleApplyComparison}
+            onReset={handleResetComparison}
+            onSaved={loadProjectWorkspace}
+            project={project}
+            savedComparisons={savedComparisons}
+            selectedRunIds={selectedRunIds}
+            sharedMetrics={sharedMetrics}
+          />
+        </div>
+      ) : (
+        <>
+          <ProjectRunFilters
+            query={query}
+            status={status}
+            tag={tag}
+            tags={tags}
+            startDate={startDate}
+            endDate={endDate}
+            onQueryChange={setQuery}
+            onStatusChange={setStatus}
+            onTagChange={setTag}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+          />
+          <div className="comparison-action-bar panel">
+            <div>
+              <strong>{selectedRunIds.length} selected</strong>
+              <p>Select two or more metric-bearing runs to create a combined comparison workspace.</p>
+            </div>
+            <div className="button-row">
+              <Button disabled={selectedRunIds.length < 2} onClick={() => setIsComparisonActive(true)}>Combine Runs</Button>
+              <Button disabled={!selectedRunIds.length} onClick={handleResetComparison} variant="secondary">Reset selection</Button>
+            </div>
+          </div>
+          <RunTable
+            disabledRunIds={disabledRunIds}
+            onRunAction={handleRunAction}
+            onRunSelect={handleRunSelect}
+            runColorMap={runColorMap}
+            runs={filteredRuns}
+            selectable
+            selectedRunIds={selectedRunIds}
+          />
+          <SavedChartsSection project={project} savedCharts={savedCharts} previewSeries={previewSeries} />
+        </>
+      )}
       {isSettingsOpen ? (
         <Modal title={`${project.name} settings`} description="Project metadata and local display settings." onClose={() => setIsSettingsOpen(false)}>
           <div className="project-settings-panel">
