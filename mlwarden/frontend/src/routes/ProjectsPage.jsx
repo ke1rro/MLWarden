@@ -1,7 +1,6 @@
-import { Plus } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { adaptProject, summarizeProjects } from '@/api/adapters.js'
-import { createProject, deleteProject, listProjects, updateProject } from '@/api/projects.js'
+import { deleteProject, listProjects, updateProject } from '@/api/projects.js'
 import { useNotifications } from '@/app/useNotifications.js'
 import { AppLayout } from '@/components/layout/AppLayout.jsx'
 import { Button } from '@/components/common/Button.jsx'
@@ -32,9 +31,6 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [isCreating, setIsCreating] = useState(false)
-  const [form, setForm] = useState({ name: '', description: '', tags: '' })
   const [editProject, setEditProject] = useState(null)
   const [editForm, setEditForm] = useState({ name: '', description: '', tags: '' })
   const [isEditing, setIsEditing] = useState(false)
@@ -66,27 +62,6 @@ export default function ProjectsPage() {
   useEffect(() => subscribe((message) => {
     if (refreshEvents.has(message.type)) loadProjects()
   }), [loadProjects, subscribe])
-
-  async function handleCreateProject(event) {
-    event.preventDefault()
-    setIsCreating(true)
-    setError('')
-    try {
-      await createProject({
-        name: form.name.trim(),
-        description: form.description.trim() || null,
-        tags: form.tags.split(',').map((tag) => tag.trim()).filter(Boolean),
-        metadata: {},
-      })
-      setForm({ name: '', description: '', tags: '' })
-      setIsCreateOpen(false)
-      await loadProjects()
-    } catch (err) {
-      setError(err.message || 'Failed to create project.')
-    } finally {
-      setIsCreating(false)
-    }
-  }
 
   function handleEditProject(project) {
     setEditProject(project)
@@ -135,28 +110,7 @@ export default function ProjectsPage() {
       <PageHeader
         title="Projects"
         subtitle="Track experiment runs, metrics, artifacts, and workflow outputs."
-        actions={<Button onClick={() => setIsCreateOpen((current) => !current)}><Plus size={15} /> New project</Button>}
       />
-      {isCreateOpen ? (
-        <form className="panel inline-form" onSubmit={handleCreateProject}>
-          <label>
-            Project name
-            <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required />
-          </label>
-          <label>
-            Description
-            <input value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} />
-          </label>
-          <label>
-            Tags
-            <input placeholder="vision, compression" value={form.tags} onChange={(event) => setForm((current) => ({ ...current, tags: event.target.value }))} />
-          </label>
-          <div className="button-row">
-            <Button disabled={isCreating} type="submit">{isCreating ? 'Creating...' : 'Create project'}</Button>
-            <Button onClick={() => setIsCreateOpen(false)} variant="secondary">Cancel</Button>
-          </div>
-        </form>
-      ) : null}
       <ProjectSummaryCards summary={summary} />
       <Toolbar>
         <SearchInput value={query} onChange={setQuery} placeholder="Search projects" />

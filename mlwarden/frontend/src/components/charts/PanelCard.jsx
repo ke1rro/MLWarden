@@ -5,6 +5,7 @@ import { IconButton } from '@/components/common/IconButton.jsx'
 export function PanelCard({
   title,
   children,
+  className = '',
   onRemove,
   actions = [],
   size = 'md',
@@ -16,7 +17,7 @@ export function PanelCard({
 }) {
   return (
     <article
-      className={`chart-panel chart-panel-${size}`}
+      className={`chart-panel chart-panel-${size} ${className}`.trim()}
       data-search-text={title}
       onDragOver={onDragOver}
       onDrop={onDrop}
