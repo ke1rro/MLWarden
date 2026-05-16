@@ -4,6 +4,7 @@ import { Activity, ArrowRight, Boxes, Image, LineChart, ShieldCheck } from 'luci
 import { Link } from 'react-router-dom'
 import { Logo } from '@/components/common/Logo.jsx'
 import { ShaderAnimation } from '@/components/ui/ShaderAnimation.jsx'
+import { AppFooter } from '@/components/layout/AppFooter.jsx'
 
 function HomeDemoChart() {
   const chartRef = useRef(null)
@@ -116,6 +117,7 @@ export default function HomePage() {
           </article>
         </div>
       </section>
+      <AppFooter />
     </main>
   )
 }

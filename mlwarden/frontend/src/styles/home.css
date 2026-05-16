@@ -2,8 +2,7 @@
   background: #050914;
   color: #ffffff;
   min-height: 100vh;
-  overflow: hidden;
-  padding-bottom: clamp(40px, 8vh, 96px);
+  padding-bottom: 0;
   position: relative;
 }
 
@@ -300,4 +299,45 @@
     justify-content: center;
     width: 100%;
   }
+}
+
+/* Dark footer variant for home page */
+.home-page .app-footer {
+  background: transparent;
+  border-top-color: rgba(255, 255, 255, 0.12);
+  margin-top: clamp(40px, 8vh, 96px);
+  position: relative;
+  z-index: 2;
+}
+
+.home-page .app-footer-logo,
+.home-page .app-footer-logo-name,
+.home-page .app-footer-logo .logo-text strong {
+  color: #ffffff;
+}
+
+.home-page .app-footer-tagline,
+.home-page .app-footer-copy,
+.home-page .app-footer-link {
+  color: rgba(255, 255, 255, 0.52);
+}
+
+.home-page .app-footer-link:hover {
+  color: #ffffff;
+}
+
+.home-page .app-footer-icon-link {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.home-page .app-footer-icon-link:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+}
+
+.home-page .app-footer-divider {
+  border-top-color: rgba(255, 255, 255, 0.1);
 }
