@@ -1,97 +1,105 @@
 import { Activity, Cpu, Database, HardDrive } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { getSystemMetrics } from '@/api/system.js'
 import { MetricChart } from '@/components/charts/MetricChart.jsx'
 import { MetricCard } from '@/components/common/MetricCard.jsx'
+import { ErrorState } from '@/components/common/ErrorState.jsx'
+import { LoadingState } from '@/components/common/LoadingState.jsx'
 import { PageHeader } from '@/components/common/PageHeader.jsx'
 import { AppLayout } from '@/components/layout/AppLayout.jsx'
 
-const samples = Array.from({ length: 32 }, (_, index) => index + 1)
-
-function buildSeries(base, swing, stepSize = 1) {
-  return samples.map((step, index) => ({
-    step: step * stepSize,
-    value: Number((base + Math.sin(index / 2.4) * swing + Math.cos(index / 4.8) * swing * 0.6).toFixed(2)),
-  }))
+const iconByMetric = {
+  'gpu-temp': Activity,
+  'cpu-temp': Cpu,
+  'gpu-usage': Activity,
+  'cpu-usage': Cpu,
+  memory: Database,
+  disk: HardDrive,
 }
 
-const metrics = [
-  {
-    id: 'gpu-temp',
-    label: 'GPU temp',
-    value: '68 C',
-    detail: 'NVIDIA device 0',
-    icon: Activity,
-    series: buildSeries(66, 5),
-    type: 'line',
-  },
-  {
-    id: 'cpu-temp',
-    label: 'CPU temp',
-    value: '54 C',
-    detail: 'package sensor',
-    icon: Cpu,
-    series: buildSeries(52, 4),
-    type: 'line',
-  },
-  {
-    id: 'gpu-usage',
-    label: 'GPU usage',
-    value: '84%',
-    detail: 'training load',
-    icon: Activity,
-    series: buildSeries(78, 14),
-    type: 'area',
-  },
-  {
-    id: 'cpu-usage',
-    label: 'CPU usage',
-    value: '46%',
-    detail: 'worker process',
-    icon: Cpu,
-    series: buildSeries(41, 10),
-    type: 'area',
-  },
-  {
-    id: 'memory',
-    label: 'Memory',
-    value: '61%',
-    detail: '31.2 / 51.2 GB',
-    icon: Database,
-    series: buildSeries(58, 7),
-    type: 'area',
-  },
-  {
-    id: 'disk',
-    label: 'Disk',
-    value: '72%',
-    detail: 'workspace volume',
-    icon: HardDrive,
-    series: buildSeries(70, 2),
-    type: 'line',
-  },
-]
+const areaMetrics = new Set(['gpu-usage', 'cpu-usage', 'memory'])
+
+function formatValue(metric) {
+  if (!metric.available || metric.value === null || metric.value === undefined) return 'n/a'
+  return `${metric.value}${metric.unit ? ` ${metric.unit}` : ''}`
+}
+
+function seriesFor(history, metricId) {
+  return history
+    .map((sample) => {
+      const metric = sample.metrics.find((item) => item.id === metricId)
+      if (!metric?.available) return null
+      return { step: sample.label, value: metric.value }
+    })
+    .filter(Boolean)
+}
 
 export default function SystemPage() {
+  const [snapshot, setSnapshot] = useState(null)
+  const [history, setHistory] = useState([])
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadMetrics() {
+      try {
+        const data = await getSystemMetrics()
+        if (cancelled) return
+        const nextSample = {
+          label: new Intl.DateTimeFormat(undefined, {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          }).format(new Date()),
+          metrics: data.metrics || [],
+        }
+        setSnapshot(data)
+        setHistory((current) => [...current.slice(-39), nextSample])
+        setError('')
+      } catch (err) {
+        if (!cancelled) setError(err.message || 'Failed to load system metrics.')
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
+    }
+
+    loadMetrics()
+    const interval = window.setInterval(loadMetrics, 5000)
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+    }
+  }, [])
+
+  const metrics = useMemo(() => snapshot?.metrics || [], [snapshot])
+
   return (
     <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'System' }]}>
       <PageHeader
         title="System"
         subtitle="Local training host telemetry for GPU, CPU, memory, and disk pressure."
       />
+      {isLoading ? <LoadingState message="Loading system metrics..." /> : null}
+      {error ? <ErrorState message={error} /> : null}
       <div className="metric-grid system-overview-grid">
         {metrics.map((metric) => (
-          <MetricCard key={metric.id} label={metric.label} value={metric.value} detail={metric.detail} />
+          <MetricCard key={metric.id} label={metric.label} value={formatValue(metric)} detail={metric.detail} />
         ))}
       </div>
       <section className="system-metrics-grid">
         {metrics.map((metric) => {
-          const Icon = metric.icon
+          const Icon = iconByMetric[metric.id] || Activity
+          const type = areaMetrics.has(metric.id) ? 'area' : 'line'
+          const series = seriesFor(history, metric.id)
           return (
             <article className="chart-panel system-metric-panel" key={metric.id}>
               <header className="chart-panel-header">
                 <h3>{metric.label}</h3>
                 <Icon size={16} />
               </header>
-              <MetricChart title={metric.label} series={metric.series} type={metric.type} area={metric.type === 'area'} />
+              <MetricChart title={metric.label} series={series} type={type} area={type === 'area'} />
             </article>
           )
         })}
