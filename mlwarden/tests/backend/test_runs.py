@@ -44,9 +44,7 @@ def test_run_lifecycle_start_finish_and_events(
 ) -> None:
     run = run_factory(headers=api_key_headers)
 
-    start_response = client.post(
-        f"/api/runs/{run['id']}/start", headers=api_key_headers
-    )
+    start_response = client.post(f"/api/runs/{run['id']}/start", headers=api_key_headers)
     assert_status(start_response, 200)
     started = response_body(start_response)
     assert started["status"] == "running"
@@ -120,9 +118,7 @@ def test_terminal_run_cannot_transition_without_resume_endpoint(
     client.post(f"/api/runs/{run['id']}/start", headers=api_key_headers)
     client.post(f"/api/runs/{run['id']}/finish", headers=api_key_headers)
 
-    response = client.post(
-        f"/api/runs/{run['id']}/fail", json={}, headers=api_key_headers
-    )
+    response = client.post(f"/api/runs/{run['id']}/fail", json={}, headers=api_key_headers)
 
     assert_error_response(response, {400, 409})
 
@@ -136,9 +132,7 @@ def test_list_runs_supports_status_name_tag_and_sort_filters(
 ) -> None:
     project = project_factory()
     matching_name = unique_name("filter-match")
-    running_run = run_factory(
-        project=project, name=matching_name, tags=["nightly", "gpu"]
-    )
+    running_run = run_factory(project=project, name=matching_name, tags=["nightly", "gpu"])
     run_factory(project=project, name=unique_name("filter-other"), tags=["daily"])
     client.post(f"/api/runs/{running_run['id']}/start", headers=auth_headers)
 
@@ -158,3 +152,36 @@ def test_list_runs_supports_status_name_tag_and_sort_filters(
     assert runs, "Expected the running run to be returned"
     assert all(run["status"] == "running" for run in runs)
     assert any(run["id"] == running_run["id"] for run in runs)
+
+
+def test_update_run_details(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    run_factory: Callable[..., dict[str, Any]],
+) -> None:
+    run = run_factory()
+
+    update_payload = {
+        "name": "updated-run-name",
+        "description": "Updated run description",
+        "status": "running",
+        "tags": ["updated", "tags"],
+        "metadata": {"updated_key": "updated_val"},
+        "summary": {"loss": 0.1},
+    }
+
+    response = client.patch(f"/api/runs/{run['id']}", json=update_payload, headers=auth_headers)
+    assert_status(response, 200)
+    updated = response_body(response)
+    assert updated["name"] == "updated-run-name"
+    assert updated["description"] == "Updated run description"
+    assert updated["status"] == "running"
+    assert updated["tags"] == ["updated", "tags"]
+    assert updated["metadata"]["updated_key"] == "updated_val"
+    assert updated["summary"]["loss"] == 0.1
+
+    # Test invalid status validation error
+    invalid_response = client.patch(
+        f"/api/runs/{run['id']}", json={"status": "invalid_status"}, headers=auth_headers
+    )
+    assert_error_response(invalid_response, 422)

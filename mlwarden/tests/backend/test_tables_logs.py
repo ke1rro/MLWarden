@@ -1,6 +1,12 @@
 from typing import Any, Callable
 
-from conftest import assert_status, assert_utc_timestamp, extract_items, response_body
+from conftest import (
+    assert_error_response,
+    assert_status,
+    assert_utc_timestamp,
+    extract_items,
+    response_body,
+)
 from fastapi.testclient import TestClient
 
 
@@ -59,9 +65,7 @@ def test_create_replace_table_append_rows_and_query_with_pagination(
     assert page.get("limit") == 2
     assert page.get("offset") == 1
     assert page.get("total") == 3
-    assert [
-        row["data"]["image_id"] if "data" in row else row["image_id"] for row in rows
-    ] == [
+    assert [row["data"]["image_id"] if "data" in row else row["image_id"] for row in rows] == [
         "img002",
         "img003",
     ]
@@ -110,3 +114,19 @@ def test_logs_append_and_query_support_level_and_text_filters(
     assert len(logs) == 1
     assert logs[0]["level"] == "warning"
     assert "plateau" in logs[0]["message"]
+
+
+def test_logs_validation_edge_cases(
+    client: TestClient,
+    api_key_headers: dict[str, str],
+    run_factory: Callable[..., dict[str, Any]],
+) -> None:
+    run = run_factory(headers=api_key_headers)
+
+    # Test empty log message validation
+    empty_log = client.post(
+        f"/api/runs/{run['id']}/logs",
+        json={"message": "   "},
+        headers=api_key_headers,
+    )
+    assert_error_response(empty_log, 422)

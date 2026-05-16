@@ -1,6 +1,7 @@
 from typing import Any, Callable
 
 from conftest import (
+    assert_error_response,
     assert_status,
     assert_utc_timestamp,
     assert_uuid,
@@ -34,16 +35,12 @@ def test_recent_events_endpoint_returns_run_events(
     client.post(f"/api/runs/{run['id']}/start", headers=api_key_headers)
     client.post(f"/api/runs/{run['id']}/finish", headers=api_key_headers)
 
-    response = client.get(
-        "/api/events/recent", params={"limit": 20}, headers=auth_headers
-    )
+    response = client.get("/api/events/recent", params={"limit": 20}, headers=auth_headers)
     assert_status(response, 200)
     events = extract_items(response_body(response), "events")
     matched = [event for event in events if event.get("run_id") == run["id"]]
     assert matched
-    assert {"run.started", "run.finished"}.issubset(
-        {event["type"] for event in matched}
-    )
+    assert {"run.started", "run.finished"}.issubset({event["type"] for event in matched})
     assert all("payload" in event for event in matched)
     assert all(assert_utc_timestamp(event["created_at"]) for event in matched)
 
@@ -78,9 +75,7 @@ def test_chart_configuration_crud(
     assert chart["chart_type"] == "line"
     assert chart["config"]["y"]["metric"] == "loss"
 
-    list_response = client.get(
-        f"/api/projects/{project['id']}/charts", headers=auth_headers
-    )
+    list_response = client.get(f"/api/projects/{project['id']}/charts", headers=auth_headers)
     assert_status(list_response, 200)
     charts = extract_items(response_body(list_response), "charts")
     assert any(item["id"] == chart["id"] for item in charts)
@@ -102,3 +97,22 @@ def test_chart_configuration_crud(
 
     delete_response = client.delete(f"/api/charts/{chart['id']}", headers=auth_headers)
     assert_status(delete_response, {200, 202, 204})
+
+
+def test_charts_validation_and_not_found(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    project_factory: Callable[..., dict[str, Any]],
+) -> None:
+    project = project_factory()
+
+    # Test empty name/type validation
+    empty_chart = client.post(
+        f"/api/projects/{project['id']}/charts",
+        json={"name": "   ", "chart_type": ""},
+        headers=auth_headers,
+    )
+    assert_error_response(empty_chart, 422)
+
+    # Test not found chart config
+    assert_error_response(client.get("/api/charts/nonexistent-id", headers=auth_headers), 404)

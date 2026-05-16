@@ -67,9 +67,7 @@ def test_log_single_and_batch_metrics_then_query_series_and_summary(
     assert [point["value"] for point in series["accuracy"]] == [0.7, 0.8]
     assert all("timestamp" in point for point in series["loss"])
 
-    summary_response = client.get(
-        f"/api/runs/{run['id']}/metrics/summary", headers=api_key_headers
-    )
+    summary_response = client.get(f"/api/runs/{run['id']}/metrics/summary", headers=api_key_headers)
     assert_status(summary_response, 200)
     summaries = extract_items(response_body(summary_response), "summaries", "metrics")
     by_name = {summary["name"]: summary for summary in summaries}
@@ -127,3 +125,27 @@ def test_run_params_can_be_replaced_and_queried(
     assert params["learning_rate"]["value_json"] == 0.001
     assert params["batch_size"]["value"] == "32"
     assert params["schedule"]["value_json"] == {"warmup": 100, "decay": "cosine"}
+
+
+def test_metric_validation_edge_cases(
+    client: TestClient,
+    api_key_headers: dict[str, str],
+    run_factory: Callable[..., dict[str, Any]],
+) -> None:
+    run = run_factory(headers=api_key_headers)
+
+    # Test empty metric name validation
+    empty_name = client.post(
+        f"/api/runs/{run['id']}/metrics",
+        json={"name": "   ", "value": 1.0},
+        headers=api_key_headers,
+    )
+    assert_error_response(empty_name, 422)
+
+    # Test boolean metric value validation
+    bool_val = client.post(
+        f"/api/runs/{run['id']}/metrics",
+        json={"name": "acc", "value": True},
+        headers=api_key_headers,
+    )
+    assert_error_response(bool_val, 422)

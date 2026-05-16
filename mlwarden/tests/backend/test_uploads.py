@@ -54,9 +54,7 @@ def test_image_upload_lists_metadata_and_serves_file(
     assert_status(detail_response, 200)
     assert response_body(detail_response)["id"] == image["id"]
 
-    file_response = client.get(
-        f"/api/images/{image['id']}/file", headers=api_key_headers
-    )
+    file_response = client.get(f"/api/images/{image['id']}/file", headers=api_key_headers)
     assert_status(file_response, 200)
     assert file_response.content == PNG_1X1
     assert file_response.headers["content-type"].startswith("image/png")
@@ -127,16 +125,12 @@ def test_artifact_upload_lists_metadata_and_downloads_bytes(
     assert ".." not in artifact.get("storage_path", "")
     assert_utc_timestamp(artifact["created_at"])
 
-    list_response = client.get(
-        f"/api/runs/{run['id']}/artifacts", headers=api_key_headers
-    )
+    list_response = client.get(f"/api/runs/{run['id']}/artifacts", headers=api_key_headers)
     assert_status(list_response, 200)
     artifacts = extract_items(response_body(list_response), "artifacts")
     assert any(item["id"] == artifact["id"] for item in artifacts)
 
-    detail_response = client.get(
-        f"/api/artifacts/{artifact['id']}", headers=api_key_headers
-    )
+    detail_response = client.get(f"/api/artifacts/{artifact['id']}", headers=api_key_headers)
     assert_status(detail_response, 200)
     assert response_body(detail_response)["id"] == artifact["id"]
 
@@ -179,3 +173,49 @@ def test_artifact_upload_respects_configured_size_limit(
     )
 
     assert_error_response(response, {400, 413})
+
+
+def test_uploads_not_found_errors(
+    client: TestClient,
+    api_key_headers: dict[str, str],
+    run_factory: Callable[..., dict[str, Any]],
+) -> None:
+    run = run_factory(headers=api_key_headers)
+
+    # Test non-existent image DB record
+    assert_error_response(client.get("/api/images/nonexistent-id", headers=api_key_headers), 404)
+
+    # Test non-existent artifact DB record
+    assert_error_response(client.get("/api/artifacts/nonexistent-id", headers=api_key_headers), 404)
+
+    # Upload an image and an artifact to test missing file on disk 404s
+    img_res = client.post(
+        f"/api/runs/{run['id']}/images",
+        files={"file": ("test.png", PNG_1X1, "image/png")},
+        headers=api_key_headers,
+    )
+    assert_status(img_res, 201)
+    image = response_body(img_res)
+
+    art_res = client.post(
+        f"/api/runs/{run['id']}/artifacts",
+        files={"file": ("test.bin", b"data", "application/octet-stream")},
+        headers=api_key_headers,
+    )
+    assert_status(art_res, 201)
+    artifact = response_body(art_res)
+
+    from backend.core import resolve_storage_path
+
+    # Delete image file from disk and test file endpoint 404
+    resolve_storage_path(image["storage_path"]).unlink()
+    assert_error_response(
+        client.get(f"/api/images/{image['id']}/file", headers=api_key_headers), 404
+    )
+
+    # Delete artifact file from disk and test download endpoint 404
+    resolve_storage_path(artifact["storage_path"]).unlink()
+    assert_error_response(
+        client.get(f"/api/artifacts/{artifact['id']}/download", headers=api_key_headers),
+        404,
+    )
