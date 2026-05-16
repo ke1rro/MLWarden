@@ -66,7 +66,15 @@ export function RunComparisonWorkspace({
   const [query, setQuery] = useState('')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isMetricPickerOpen, setIsMetricPickerOpen] = useState(false)
-  const primaryChartRef = useRef(null)
+  // Drag-to-reorder: metric order stored separately so reorder doesn't wipe config
+  const [metricOrder, setMetricOrder] = useState([])
+  // Per-panel size overrides
+  const [panelSizes, setPanelSizes] = useState({})
+  // Multi-chart export modal
+  const [isExportOpen, setIsExportOpen] = useState(false)
+  const [exportSelection, setExportSelection] = useState(new Set())
+  const [isExporting, setIsExporting] = useState(false)
+
   const chartRefs = useRef({})
 
   useEffect(() => {
@@ -97,6 +105,18 @@ export function RunComparisonWorkspace({
       return { ...current, metrics: nextMetrics, primaryMetric }
     })
   }, [sharedMetrics])
+
+  // Keep metricOrder in sync with config.metrics when it changes externally
+  useEffect(() => {
+    setMetricOrder((prev) => {
+      const prevSet = new Set(prev)
+      const nextMetrics = config.metrics
+      // Keep existing order for already-present metrics, append new ones
+      const kept = prev.filter((m) => nextMetrics.includes(m))
+      const added = nextMetrics.filter((m) => !prevSet.has(m))
+      return [...kept, ...added]
+    })
+  }, [config.metrics])
 
   useEffect(() => {
     let cancelled = false
@@ -133,7 +153,11 @@ export function RunComparisonWorkspace({
   }, [config.aggregation, config.metricDirection, config.metrics, config.smoothing, config.xAxis, project.id, selectedRunIds])
 
   const selectedMetricSet = new Set(config.metrics)
-  const visibleMetrics = config.metrics.filter((metric) => metric.toLowerCase().includes(query.toLowerCase()))
+  // Use metricOrder to drive the display order; fall back to config.metrics
+  const orderedMetrics = metricOrder.length
+    ? metricOrder.filter((m) => config.metrics.includes(m))
+    : config.metrics
+  const visibleMetrics = orderedMetrics.filter((metric) => metric.toLowerCase().includes(query.toLowerCase()))
   const primaryMetric = config.primaryMetric || config.metrics[0] || ''
   const bestRunName = comparison?.summary?.best_run_name || 'n/a'
   const bestValue = comparison?.summary?.best_value
@@ -148,6 +172,24 @@ export function RunComparisonWorkspace({
       const metrics = exists ? current.metrics.filter((item) => item !== metric) : [...current.metrics, metric]
       return { ...current, metrics, primaryMetric: metrics.includes(current.primaryMetric) ? current.primaryMetric : metrics[0] || '' }
     })
+  }
+
+  function handleReorderPanel(sourceMetric, targetMetric) {
+    if (!sourceMetric || sourceMetric === targetMetric) return
+    setMetricOrder((prev) => {
+      const list = prev.length ? prev : [...config.metrics]
+      const sourceIndex = list.indexOf(sourceMetric)
+      const targetIndex = list.indexOf(targetMetric)
+      if (sourceIndex < 0 || targetIndex < 0) return list
+      const next = [...list]
+      const [item] = next.splice(sourceIndex, 1)
+      next.splice(targetIndex, 0, item)
+      return next
+    })
+  }
+
+  function handleResizePanel(metric, size) {
+    setPanelSizes((prev) => ({ ...prev, [metric]: size }))
   }
 
   function optionForMetric(metric) {
@@ -195,36 +237,38 @@ export function RunComparisonWorkspace({
     }
   }
 
-  async function handleExport(format) {
-    const option = optionForMetric(primaryMetric)
-    const chart = chartRefs.current[primaryMetric] || primaryChartRef.current
-    if (!chart || !option) return
-    try {
-      await exportChart({
-        chart,
-        option,
-        format,
-        filename: `${config.name || project.name}-${primaryMetric}`,
-      })
-    } catch (err) {
-      setError(err.message || `Failed to export ${format.toUpperCase()}.`)
-    }
-  }
-
   async function handleExportMetric(metric, format) {
     const chart = chartRefs.current[metric]
     const option = optionForMetric(metric)
     if (!chart || !option) return
+    await exportChart({
+      chart,
+      option,
+      format,
+      filename: `${config.name || project.name}-${metric}`,
+    })
+  }
+
+  async function handleBulkExport(format) {
+    if (!exportSelection.size) return
+    setIsExporting(true)
+    const metrics = [...exportSelection]
     try {
-      await exportChart({
-        chart,
-        option,
-        format,
-        filename: `${config.name || project.name}-${metric}`,
-      })
+      for (const metric of metrics) {
+        // eslint-disable-next-line no-await-in-loop
+        await handleExportMetric(metric, format)
+      }
     } catch (err) {
       setError(err.message || `Failed to export ${format.toUpperCase()}.`)
+    } finally {
+      setIsExporting(false)
     }
+  }
+
+  function openExportModal() {
+    // Pre-select all visible metrics
+    setExportSelection(new Set(visibleMetrics))
+    setIsExportOpen(true)
   }
 
   function handleExportJson() {
@@ -250,8 +294,7 @@ export function RunComparisonWorkspace({
         </div>
         <div className="button-row">
           <Button disabled={isSaving || !config.metrics.length} onClick={handleSaveComparison}>{isSaving ? 'Saving...' : 'Save comparison'}</Button>
-          <Button onClick={() => handleExport('png')} variant="secondary">Export PNG</Button>
-          <Button onClick={() => handleExport('svg')} variant="secondary">Export SVG</Button>
+          <Button onClick={openExportModal} variant="secondary"><Download size={14} /> Export charts</Button>
           <Button onClick={handleExportJson} variant="secondary">Export JSON</Button>
           <Button onClick={onReset} variant="secondary">Reset selection</Button>
         </div>
@@ -268,30 +311,45 @@ export function RunComparisonWorkspace({
       {!sharedMetrics.length ? <EmptyState title="Selected runs have no shared metrics." message="Choose runs that logged at least one metric with the same name." /> : null}
 
       <div className="chart-grid comparison-chart-grid">
-        {visibleMetrics.map((metric) => (
-          <PanelCard
-            actions={[
-              { label: 'Export PNG', icon: Download, onSelect: () => handleExportMetric(metric, 'png') },
-              { label: 'Export SVG', icon: Download, onSelect: () => handleExportMetric(metric, 'svg') },
-            ]}
-            className="comparison-chart-panel"
-            key={metric}
-            size={metric === primaryMetric ? 'lg' : 'md'}
-            title={metric}
-          >
-            <MetricChart
-              option={optionForMetric(metric)}
-              onReady={(chart) => {
-                if (chart) chartRefs.current[metric] = chart
-                else delete chartRefs.current[metric]
-                if (metric === primaryMetric) primaryChartRef.current = chart
+        {visibleMetrics.map((metric) => {
+          const panelSize = panelSizes[metric] || (metric === primaryMetric ? 'lg' : 'md')
+          return (
+            <PanelCard
+              actions={[
+                { label: 'Export PNG', icon: Download, onSelect: () => handleExportMetric(metric, 'png') },
+                { label: 'Export SVG', icon: Download, onSelect: () => handleExportMetric(metric, 'svg') },
+              ]}
+              className="comparison-chart-panel"
+              draggable
+              key={metric}
+              onDragOver={(event) => event.preventDefault()}
+              onDragStart={(event) => {
+                event.dataTransfer.effectAllowed = 'move'
+                event.dataTransfer.setData('text/plain', metric)
               }}
-            />
-          </PanelCard>
-        ))}
+              onDrop={(event) => {
+                event.preventDefault()
+                handleReorderPanel(event.dataTransfer.getData('text/plain'), metric)
+              }}
+              onRemove={null}
+              onResize={(size) => handleResizePanel(metric, size)}
+              size={panelSize}
+              title={metric}
+            >
+              <MetricChart
+                option={optionForMetric(metric)}
+                onReady={(chart) => {
+                  if (chart) chartRefs.current[metric] = chart
+                  else delete chartRefs.current[metric]
+                }}
+              />
+            </PanelCard>
+          )
+        })}
       </div>
       {visibleMetrics.length ? null : <EmptyState title="No panels match this filter." message="Clear the panel search or enable another comparison metric." />}
 
+      {/* Comparison settings modal */}
       {isSettingsOpen ? (
         <Modal title="Comparison settings" description="Adjust how the selected runs are compared." onClose={() => setIsSettingsOpen(false)} size="lg">
           <div className="comparison-settings-grid">
@@ -360,6 +418,7 @@ export function RunComparisonWorkspace({
         </Modal>
       ) : null}
 
+      {/* Metric picker modal */}
       {isMetricPickerOpen ? (
         <Modal title={`Charts ${config.metrics.length}`} description="Choose which shared metrics are visible as panels." onClose={() => setIsMetricPickerOpen(false)}>
           <div className="comparison-metric-picker">
@@ -369,6 +428,68 @@ export function RunComparisonWorkspace({
                 {metric}
               </label>
             ))}
+          </div>
+        </Modal>
+      ) : null}
+
+      {/* Multi-chart export modal */}
+      {isExportOpen ? (
+        <Modal
+          title="Export charts"
+          description="Select which metric panels to export."
+          onClose={() => setIsExportOpen(false)}
+        >
+          <div className="comparison-export-modal">
+            <div className="comparison-export-actions">
+              <button
+                className="button button-secondary button-sm"
+                type="button"
+                onClick={() => setExportSelection(new Set(visibleMetrics))}
+              >
+                Select all
+              </button>
+              <button
+                className="button button-secondary button-sm"
+                type="button"
+                onClick={() => setExportSelection(new Set())}
+              >
+                Clear
+              </button>
+            </div>
+            <div className="comparison-metric-picker">
+              {visibleMetrics.map((metric) => (
+                <label className="toggle-control" key={metric}>
+                  <input
+                    checked={exportSelection.has(metric)}
+                    type="checkbox"
+                    onChange={() => {
+                      setExportSelection((prev) => {
+                        const next = new Set(prev)
+                        if (next.has(metric)) next.delete(metric)
+                        else next.add(metric)
+                        return next
+                      })
+                    }}
+                  />
+                  {metric}
+                </label>
+              ))}
+            </div>
+            <div className="button-row comparison-export-footer">
+              <Button
+                disabled={!exportSelection.size || isExporting}
+                onClick={() => handleBulkExport('png')}
+              >
+                {isExporting ? 'Exporting…' : 'Export PNG'}
+              </Button>
+              <Button
+                disabled={!exportSelection.size || isExporting}
+                onClick={() => handleBulkExport('svg')}
+                variant="secondary"
+              >
+                {isExporting ? 'Exporting…' : 'Export SVG'}
+              </Button>
+            </div>
           </div>
         </Modal>
       ) : null}
