@@ -73,7 +73,7 @@ class ParamsPutRequest(FlexibleModel):
 
 class MetricCreate(FlexibleModel):
     name: str
-    value: float
+    value: Any
     step: int | None = None
     timestamp: str | None = None
     context: JsonObject = Field(default_factory=dict)
