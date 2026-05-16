@@ -1,82 +1,101 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Navigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { adaptProject, adaptRun } from '@/api/adapters.js'
-import { createChart, listCharts } from '@/api/charts.js'
+import { createChart, listCharts, updateChart } from '@/api/charts.js'
 import { getProject } from '@/api/projects.js'
 import { listRuns } from '@/api/runs.js'
 import { useNotifications } from '@/app/useNotifications.js'
 import { ChartBuilder } from '@/components/charts/ChartBuilder.jsx'
-import { EmptyState } from '@/components/common/EmptyState.jsx'
 import { ErrorState } from '@/components/common/ErrorState.jsx'
 import { LoadingState } from '@/components/common/LoadingState.jsx'
 import { PageHeader } from '@/components/common/PageHeader.jsx'
 import { AppLayout } from '@/components/layout/AppLayout.jsx'
 
 export default function ChartsPage() {
-  const { projectId } = useParams()
+  const { projectId: routeProjectId } = useParams()
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const initialChartId = searchParams.get('chart') || null
+
+  const [projectId, setProjectId] = useState(routeProjectId || null)
   const [project, setProject] = useState(null)
   const [runs, setRuns] = useState([])
   const [savedCharts, setSavedCharts] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(!!routeProjectId)
   const [error, setError] = useState('')
   const { subscribe } = useNotifications()
 
-  const loadChartsWorkspace = useCallback(async () => {
+  const loadWorkspace = useCallback(async (pid) => {
+    if (!pid) return
+    setIsLoading(true)
     setError('')
     try {
-      const [projectResponse, runsResponse, chartsResponse] = await Promise.all([
-        getProject(projectId),
-        listRuns(projectId, { limit: 500 }),
-        listCharts(projectId),
+      const [projectRes, runsRes, chartsRes] = await Promise.all([
+        getProject(pid),
+        listRuns(pid, { limit: 500 }),
+        listCharts(pid),
       ])
-      setProject(adaptProject(projectResponse))
-      setRuns((runsResponse.items || []).map((run) => adaptRun(run)))
-      setSavedCharts(chartsResponse.items || [])
+      setProject(adaptProject(projectRes))
+      setRuns((runsRes.items || []).map((r) => adaptRun(r)))
+      setSavedCharts(chartsRes.items || [])
     } catch (err) {
-      setError(err.message || 'Failed to load charts workspace.')
+      setError(err.message || 'Failed to load workspace.')
     } finally {
       setIsLoading(false)
     }
-  }, [projectId])
+  }, [])
 
   useEffect(() => {
-    loadChartsWorkspace()
-  }, [loadChartsWorkspace])
+    loadWorkspace(projectId)
+  }, [projectId, loadWorkspace])
 
-  useEffect(() => subscribe((message) => {
-    if (message.type === 'backend.connected' || message.project_id === projectId) loadChartsWorkspace()
-  }), [loadChartsWorkspace, projectId, subscribe])
+  useEffect(() => subscribe((msg) => {
+    if (msg.type === 'backend.connected' || msg.project_id === projectId) loadWorkspace(projectId)
+  }), [loadWorkspace, projectId, subscribe])
 
-  async function handleSaveChart(body) {
-    await createChart(projectId, body)
-    await loadChartsWorkspace()
+  function handleProjectChange(nextProjectId) {
+    if (nextProjectId === projectId) return
+    setProject(null)
+    setRuns([])
+    setSavedCharts([])
+    setIsLoading(true)
+    setProjectId(nextProjectId)
+    navigate(`/projects/${nextProjectId}/charts`, { replace: true })
   }
 
-  if (isLoading) {
-    return (
-      <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Charts', to: '/charts' }]}>
-        <LoadingState message="Loading chart builder..." />
-      </AppLayout>
-    )
+  async function handleSaveChart(body, chartId) {
+    if (chartId) {
+      await updateChart(chartId, body)
+    } else {
+      await createChart(projectId, body)
+    }
+    await loadWorkspace(projectId)
   }
 
-  if (!project && error) {
-    return (
-      <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Charts', to: '/charts' }]}>
-        <EmptyState title="Project not found." message="Choose an existing project before opening its chart builder." />
-      </AppLayout>
-    )
-  }
+  const initialChart = initialChartId ? savedCharts.find((c) => c.id === initialChartId) : null
 
-  if (!project) {
-    return <Navigate to="/projects" replace />
-  }
+  const breadcrumbs = [
+    { label: 'MLWarden', to: '/workspace' },
+    ...(project ? [{ label: project.name, to: `/projects/${project.id}` }] : []),
+    { label: 'Charts' },
+  ]
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: project.name, to: `/projects/${project.id}` }, { label: 'Charts' }]}>
-      <PageHeader title="Charts" subtitle="Build saved project charts from metrics, params, metadata, tables, and events." />
+    <AppLayout breadcrumbs={breadcrumbs}>
+      <PageHeader title="Charts" subtitle="Build saved project charts from run metrics." />
       {error ? <ErrorState message={error} /> : null}
-      <ChartBuilder project={project} runs={runs} savedCharts={savedCharts} onSaveChart={handleSaveChart} />
+      {isLoading
+        ? <LoadingState message="Loading workspace..." />
+        : (
+          <ChartBuilder
+            project={project}
+            runs={runs}
+            savedCharts={savedCharts}
+            onSaveChart={projectId ? handleSaveChart : null}
+            onProjectChange={handleProjectChange}
+            initialChart={initialChart}
+          />
+        )}
     </AppLayout>
   )
 }

@@ -65,6 +65,10 @@ export const router = createBrowserRouter([
         element: <ProjectDetailPage />,
       },
       {
+        path: '/charts/new',
+        element: <ChartsPage />,
+      },
+      {
         path: '/projects/:projectId/charts',
         element: <ChartsPage />,
       },

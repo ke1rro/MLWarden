@@ -126,6 +126,9 @@
 .builder-panel select,
 .builder-panel input,
 .builder-panel textarea,
+.builder-controls select,
+.builder-controls input,
+.builder-controls textarea,
 .settings-panel input,
 .settings-panel select,
 .settings-form-grid input,
@@ -141,13 +144,17 @@
 
 .builder-panel input,
 .builder-panel select,
-.builder-panel textarea {
+.builder-panel textarea,
+.builder-controls input,
+.builder-controls select,
+.builder-controls textarea {
   max-width: 100%;
   min-width: 0;
   width: 100%;
 }
 
 .builder-panel textarea,
+.builder-controls textarea,
 .settings-form-grid textarea {
   resize: none;
 }
@@ -181,6 +188,27 @@
   background: #eff6ff;
   border-color: #93c5fd;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.summary-card-new {
+  border-style: dashed;
+  color: var(--color-muted);
+}
+
+.summary-card-new strong {
+  color: var(--color-muted);
+}
+
+.summary-card-new:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  border-style: dashed;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  color: var(--color-primary);
+}
+
+.summary-card-new:hover strong {
+  color: var(--color-primary);
 }
 
 .summary-card span,

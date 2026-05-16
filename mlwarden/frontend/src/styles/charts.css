@@ -78,6 +78,58 @@
   grid-template-columns: 340px minmax(0, 1fr);
 }
 
+/* Vertical layout: chart on top, controls bar below */
+.chart-builder-vertical {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+}
+
+.builder-controls {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.builder-controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.builder-section-inline {
+  border-top: 0;
+  border-left: 1px solid var(--color-border);
+  display: grid;
+  flex: 1 1 160px;
+  gap: var(--space-2);
+  min-width: 140px;
+  padding-left: var(--space-3);
+  padding-top: 0;
+}
+
+.builder-section-inline:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.builder-actions-row {
+  align-items: center;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+  padding-top: var(--space-3);
+}
+
+.saved-chart-list-inline {
+  border-top: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-top: 0;
+}
+
 .builder-panel {
   display: grid;
   gap: var(--space-3);
@@ -87,6 +139,10 @@
 
 .builder-preview {
   min-width: 0;
+}
+
+.builder-preview .metric-chart {
+  height: 380px;
 }
 
 .builder-section {
@@ -120,8 +176,16 @@
   border-radius: var(--radius-sm);
   color: var(--color-text);
   display: flex;
-  min-height: 34px;
-  padding: 7px 10px;
+  gap: 6px;
+  min-height: 28px;
+  padding: 5px 10px;
+}
+
+.toggle-grid input[type="checkbox"] {
+  flex-shrink: 0;
+  height: 14px;
+  margin: 0;
+  width: 14px;
 }
 
 .image-grid {
