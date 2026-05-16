@@ -6,7 +6,7 @@ const DEV_FALLBACK_WS = 'ws://localhost:8000'
 const hasApiEnv = Object.prototype.hasOwnProperty.call(import.meta.env, 'VITE_API_BASE_URL')
 const hasWsEnv = Object.prototype.hasOwnProperty.call(import.meta.env, 'VITE_WS_BASE_URL')
 
-const API_BASE_URL = (hasApiEnv ? import.meta.env.VITE_API_BASE_URL : DEV_FALLBACK_API).replace(
+export const API_BASE_URL = (hasApiEnv ? import.meta.env.VITE_API_BASE_URL : DEV_FALLBACK_API).replace(
   /\/$/,
   '',
 )

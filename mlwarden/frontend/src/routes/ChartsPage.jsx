@@ -54,7 +54,7 @@ export default function ChartsPage() {
 
   if (isLoading) {
     return (
-      <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'Charts', to: '/charts' }]}>
+      <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Charts', to: '/charts' }]}>
         <LoadingState message="Loading chart builder..." />
       </AppLayout>
     )
@@ -62,7 +62,7 @@ export default function ChartsPage() {
 
   if (!project && error) {
     return (
-      <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'Charts', to: '/charts' }]}>
+      <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Charts', to: '/charts' }]}>
         <EmptyState title="Project not found." message="Choose an existing project before opening its chart builder." />
       </AppLayout>
     )
@@ -73,7 +73,7 @@ export default function ChartsPage() {
   }
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: project.name, to: `/projects/${project.id}` }, { label: 'Charts' }]}>
+    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: project.name, to: `/projects/${project.id}` }, { label: 'Charts' }]}>
       <PageHeader title="Charts" subtitle="Build saved project charts from metrics, params, metadata, tables, and events." />
       {error ? <ErrorState message={error} /> : null}
       <ChartBuilder project={project} runs={runs} savedCharts={savedCharts} onSaveChart={handleSaveChart} />

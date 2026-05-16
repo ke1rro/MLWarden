@@ -10,7 +10,6 @@ import RunsPage from '@/routes/RunsPage.jsx'
 import WorkspacePage from '@/routes/WorkspacePage.jsx'
 import ArtifactsPage from '@/routes/ArtifactsPage.jsx'
 import SystemPage from '@/routes/SystemPage.jsx'
-import SettingsPage from '@/routes/SettingsPage.jsx'
 import NotFoundPage from '@/routes/NotFoundPage.jsx'
 import OfflinePage from '@/routes/OfflinePage.jsx'
 import RouteErrorPage from '@/routes/RouteErrorPage.jsx'
@@ -32,12 +31,12 @@ export const router = createBrowserRouter([
     errorElement: <RouteErrorPage />,
     children: [
       {
-        path: '/projects',
-        element: <ProjectsPage />,
-      },
-      {
         path: '/workspace',
         element: <WorkspacePage />,
+      },
+      {
+        path: '/projects',
+        element: <ProjectsPage />,
       },
       {
         path: '/runs',
@@ -66,10 +65,6 @@ export const router = createBrowserRouter([
       {
         path: '/runs/:runId',
         element: <RunDetailPage />,
-      },
-      {
-        path: '/settings',
-        element: <SettingsPage />,
       },
       {
         path: '/offline',

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
-import { ArrowRight, Boxes, Image, LineChart, ShieldCheck } from 'lucide-react'
+import { Activity, ArrowRight, Boxes, Image, LineChart, ShieldCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Logo } from '@/components/common/Logo.jsx'
 import { ShaderAnimation } from '@/components/ui/ShaderAnimation.jsx'
@@ -72,7 +72,7 @@ export default function HomePage() {
           artifacts, logs, and system signals.
         </p>
         <div className="home-actions">
-          <Link className="home-button primary" to="/projects">
+          <Link className="home-button primary" to="/workspace">
             Open workspace
             <ArrowRight size={17} />
           </Link>
@@ -108,6 +108,11 @@ export default function HomePage() {
             <Image size={18} />
             <strong>predictions</strong>
             <small>batch preview at step 1200</small>
+          </article>
+          <article className="console-card">
+            <Activity size={18} />
+            <strong>GPU usage</strong>
+            <small>87% · gpu-worker-01</small>
           </article>
         </div>
       </section>

@@ -52,7 +52,7 @@ export default function ArtifactsPage() {
   }
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'Artifacts' }]}>
+    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Artifacts' }]}>
       <PageHeader title="Artifacts" subtitle="All run artifacts across local projects." />
       <Toolbar>
         <SearchInput value={query} onChange={setQuery} placeholder="Search artifacts" />

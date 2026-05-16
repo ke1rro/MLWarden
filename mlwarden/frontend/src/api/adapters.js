@@ -59,8 +59,8 @@ export function adaptProject(project = {}) {
     stats: {
       runs: project.run_count ?? 0,
       running: project.running_run_count ?? 0,
-      finished: project.finished_run_count ?? 'n/a',
-      failed: project.failed_run_count ?? 'n/a',
+      finished: project.finished_run_count ?? 0,
+      failed: project.failed_run_count ?? 0,
     },
     latestRun: formatDate(project.latest_run_at),
     tags: project.tags || [],
@@ -73,7 +73,7 @@ export function summarizeProjects(projects = []) {
     totalProjects: projects.length,
     activeProjects: projects.filter((project) => !project.deleted_at).length,
     runningRuns: projects.reduce((sum, project) => sum + Number(project.running_run_count || 0), 0),
-    failedRuns: 'n/a',
+    failedRuns: projects.reduce((sum, project) => sum + Number(project.failed_run_count || 0), 0),
     latestActivity: latest?.latestRun || 'n/a',
     latestRunName: latest?.name || 'No runs yet',
   }

@@ -43,7 +43,7 @@ export default function WorkspacePage() {
   }, [snapshot])
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'Workspace' }]}>
+    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Workspace' }]}>
       <PageHeader
         title="Workspace"
         subtitle="Overview of the local MLWarden instance across projects, runs, charts, and artifacts."

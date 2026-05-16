@@ -1,8 +1,11 @@
-import { Link } from 'react-router-dom'
+import { Edit, ExternalLink, Trash2 } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 import { ActionMenu } from '@/components/common/ActionMenu.jsx'
 import { EmptyState } from '@/components/common/EmptyState.jsx'
 
-export function ProjectTable({ projects }) {
+export function ProjectTable({ projects, onEditProject, onDeleteProject }) {
+  const navigate = useNavigate()
+
   if (!projects.length) {
     return <EmptyState title="No projects yet." message="Create your first project or connect a worker script." />
   }
@@ -16,6 +19,7 @@ export function ProjectTable({ projects }) {
             <th>Description</th>
             <th>Runs</th>
             <th>Running</th>
+            <th>Failed</th>
             <th>Latest run</th>
             <th>Tags</th>
             <th>Actions</th>
@@ -32,6 +36,7 @@ export function ProjectTable({ projects }) {
               <td className="muted-cell">{project.description || 'n/a'}</td>
               <td>{project.stats.runs}</td>
               <td>{project.stats.running}</td>
+              <td>{project.stats.failed}</td>
               <td>{project.latestRun}</td>
               <td>
                 <div className="tag-row">
@@ -40,7 +45,13 @@ export function ProjectTable({ projects }) {
                   ))}
                 </div>
               </td>
-              <td><ActionMenu /></td>
+              <td>
+                <ActionMenu items={[
+                  { label: 'View project', icon: ExternalLink, onSelect: () => navigate(`/projects/${project.id}`) },
+                  ...(onEditProject ? [{ label: 'Edit project', icon: Edit, onSelect: () => onEditProject(project) }] : []),
+                  ...(onDeleteProject ? [{ label: 'Delete project', icon: Trash2, onSelect: () => onDeleteProject(project) }] : []),
+                ]} />
+              </td>
             </tr>
           ))}
         </tbody>

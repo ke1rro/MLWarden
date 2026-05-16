@@ -224,6 +224,7 @@
   display: grid;
   gap: var(--space-3);
   grid-template-columns: 2fr 1fr 1fr;
+  grid-template-rows: auto auto;
   padding: var(--space-4);
 }
 

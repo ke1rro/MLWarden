@@ -234,7 +234,7 @@ export default function ProjectDetailPage() {
 
   if (!project && error) {
     return (
-      <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'Projects', to: '/projects' }]}>
+      <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Projects', to: '/projects' }]}>
         <ErrorState title="Project not available" message={error} />
       </AppLayout>
     )
@@ -245,7 +245,7 @@ export default function ProjectDetailPage() {
   }
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: project.name }]}>
+    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: project.name }]}>
       <PageHeader
         title={project.name}
         subtitle={project.description}

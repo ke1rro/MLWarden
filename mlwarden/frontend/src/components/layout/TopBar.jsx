@@ -1,4 +1,5 @@
-import { Bell, CircleHelp, LogOut, Search, Settings, UserRound } from 'lucide-react'
+import { Bell, CircleHelp, LogOut, Search, UserRound } from 'lucide-react'
+import { API_BASE_URL } from '@/api/client.js'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/app/useAuth.js'
@@ -120,10 +121,7 @@ export function TopBar({ breadcrumbs }) {
                   <span>{user?.role || 'User'}</span>
                 </div>
               </div>
-              <Link to="/settings" onClick={() => setIsUserMenuOpen(false)}>
-                <Settings size={15} />
-                Settings
-              </Link>
+
               <button type="button" onClick={() => setIsLogoutConfirmOpen(true)}>
                 <LogOut size={15} />
                 Log out
@@ -146,7 +144,7 @@ export function TopBar({ breadcrumbs }) {
               <pre>{`from mlwarden import Tracker
 
 tracker = Tracker(
-    base_url="http://localhost:8000",
+    base_url="${API_BASE_URL}",
     api_key="dev-api-key",
     project="demo-project",
 )`}</pre>

@@ -78,6 +78,8 @@ def project_stats(project_id: str) -> dict[str, Any]:
         SELECT
             COUNT(*) AS run_count,
             SUM(CASE WHEN status = 'running' AND deleted_at IS NULL THEN 1 ELSE 0 END) AS running_run_count,
+            SUM(CASE WHEN status = 'finished' AND deleted_at IS NULL THEN 1 ELSE 0 END) AS finished_run_count,
+            SUM(CASE WHEN status = 'failed' AND deleted_at IS NULL THEN 1 ELSE 0 END) AS failed_run_count,
             MAX(created_at) AS latest_run_at
         FROM runs
         WHERE project_id = ? AND deleted_at IS NULL

@@ -654,6 +654,8 @@ def project_response(project: dict[str, Any]) -> dict[str, Any]:
         **project,
         "run_count": int(stats.get("run_count") or 0),
         "running_run_count": int(stats.get("running_run_count") or 0),
+        "finished_run_count": int(stats.get("finished_run_count") or 0),
+        "failed_run_count": int(stats.get("failed_run_count") or 0),
         "latest_run_at": stats.get("latest_run_at"),
     }
 

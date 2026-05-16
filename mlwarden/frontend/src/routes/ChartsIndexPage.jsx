@@ -45,7 +45,7 @@ export default function ChartsIndexPage() {
   )
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'Charts' }]}>
+    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Charts' }]}>
       <PageHeader title="Charts" subtitle="Saved chart configurations across all projects." />
       <Toolbar>
         <SearchInput value={query} onChange={setQuery} placeholder="Search charts" />

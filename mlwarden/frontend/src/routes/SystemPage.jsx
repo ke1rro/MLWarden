@@ -76,7 +76,7 @@ export default function SystemPage() {
   const metrics = useMemo(() => snapshot?.metrics || [], [snapshot])
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'System' }]}>
+    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'System' }]}>
       <PageHeader
         title="System"
         subtitle="Local training host telemetry for GPU, CPU, memory, and disk pressure."

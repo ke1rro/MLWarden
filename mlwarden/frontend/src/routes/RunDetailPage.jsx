@@ -166,7 +166,7 @@ export default function RunDetailPage() {
 
   if (isLoading) {
     return (
-      <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'Runs', to: '/runs' }]}>
+      <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Runs', to: '/runs' }]}>
         <LoadingState message="Loading run..." />
       </AppLayout>
     )
@@ -174,7 +174,7 @@ export default function RunDetailPage() {
 
   if (!run && error) {
     return (
-      <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'Runs', to: '/runs' }]}>
+      <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Runs', to: '/runs' }]}>
         <EmptyState title="Run not found." message="Choose an existing run from the runs page or create one from a project workspace." />
       </AppLayout>
     )
@@ -185,7 +185,7 @@ export default function RunDetailPage() {
   }
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: project.name, to: `/projects/${project.id}` }, { label: run.name }]}>
+    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: project.name, to: `/projects/${project.id}` }, { label: run.name }]}>
       <RunHeader onRunAction={handleRunAction} project={project} run={run} />
       {error ? <ErrorState message={error.message || 'Run action failed.'} /> : null}
       <Tabs tabs={tabs} activeTab={activeTab} onChange={(tab) => setSearchParams(tab === 'charts' ? {} : { tab })} />

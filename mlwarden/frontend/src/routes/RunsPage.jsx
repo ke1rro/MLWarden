@@ -48,7 +48,7 @@ export default function RunsPage() {
   )
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/projects' }, { label: 'Runs' }]}>
+    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Runs' }]}>
       <PageHeader title="Runs" subtitle="All experiment runs across local projects." />
       <Toolbar>
         <SearchInput value={query} onChange={setQuery} placeholder="Search runs" />

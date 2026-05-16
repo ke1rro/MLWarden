@@ -24,7 +24,7 @@ export function MetricChart({ title, series, type = 'line', area = false, onRead
       animation: false,
       color: ['#2563eb'],
       dataZoom: [
-        { type: 'inside', xAxisIndex: 0, filterMode: 'none' },
+        { type: 'inside', xAxisIndex: 0, filterMode: 'none', moveOnMouseMove: false, moveOnMouseWheel: false, zoomOnMouseWheel: true },
         { type: 'slider', xAxisIndex: 0, filterMode: 'none', height: 18, bottom: 8 },
       ],
       grid: { left: 44, right: 16, top: 16, bottom: 48 },
