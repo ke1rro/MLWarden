@@ -58,15 +58,8 @@ function ProjectMetricSummary({ stats }) {
 function ProjectRunFilters({
   query,
   status,
-  tag,
-  tags,
-  startDate,
-  endDate,
   onQueryChange,
   onStatusChange,
-  onTagChange,
-  onStartDateChange,
-  onEndDateChange,
 }) {
   return (
     <Toolbar>
@@ -75,12 +68,6 @@ function ProjectRunFilters({
         <option value="all">All statuses</option>
         {statusOptions.map((option) => <option key={option} value={option}>{option}</option>)}
       </select>
-      <select value={tag} onChange={(event) => onTagChange(event.target.value)}>
-        {tags.map((item) => <option key={item} value={item}>{item}</option>)}
-      </select>
-      <input placeholder="Metric search: val.psnr > 30" />
-      <input aria-label="Runs created after" type="date" value={startDate} onChange={(event) => onStartDateChange(event.target.value)} />
-      <input aria-label="Runs created before" type="date" value={endDate} onChange={(event) => onEndDateChange(event.target.value)} />
     </Toolbar>
   )
 }
@@ -133,9 +120,6 @@ export default function ProjectDetailPage() {
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('all')
-  const [tag, setTag] = useState('all')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
@@ -216,7 +200,6 @@ export default function ProjectDetailPage() {
     finished: projectRuns.filter((run) => run.status === 'finished').length,
     failed: projectRuns.filter((run) => run.status === 'failed').length,
   }), [projectRuns])
-  const tags = ['all', ...new Set(projectRuns.flatMap((run) => run.tags || []))]
   const selectableRunIds = useMemo(() => new Set(projectRuns.filter((run) => (runMetricNames[run.id] || []).length).map((run) => run.id)), [projectRuns, runMetricNames])
   const disabledRunIds = useMemo(() => projectRuns.filter((run) => !selectableRunIds.has(run.id)).map((run) => run.id), [projectRuns, selectableRunIds])
   const runColorMap = useMemo(() => Object.fromEntries(projectRuns.map((run, index) => [run.id, runPalette[index % runPalette.length]])), [projectRuns])
@@ -229,14 +212,9 @@ export default function ProjectDetailPage() {
   }, [runMetricNames, selectedRunIds])
   const filteredRuns = projectRuns.filter((run) => {
     const matchesStatus = status === 'all' || run.status === status
-    const matchesTag = tag === 'all' || run.tags.includes(tag)
     const matchesQuery = `${run.name} ${run.description} ${run.worker}`.toLowerCase().includes(query.toLowerCase())
-    const createdTime = run.created_at ? new Date(run.created_at).getTime() : null
-    const afterStart = !startDate || (createdTime && createdTime >= new Date(`${startDate}T00:00:00`).getTime())
-    const beforeEnd = !endDate || (createdTime && createdTime <= new Date(`${endDate}T23:59:59`).getTime())
-    return matchesStatus && matchesTag && matchesQuery && afterStart && beforeEnd
+    return matchesStatus && matchesQuery
   })
-
   function handleRunSelect(run, event, index) {
     if (!selectableRunIds.has(run.id)) return
     const shouldSelect = event.currentTarget.checked
@@ -330,7 +308,6 @@ export default function ProjectDetailPage() {
         actions={(
           <>
             <Button onClick={() => setIsCreateOpen((current) => !current)}><Plus size={15} /> New run</Button>
-            {selectedRunIds.length >= 2 ? <Button onClick={() => setIsComparisonActive(true)}>Combine Runs</Button> : null}
             <Link className="button button-secondary button-md" to={`/projects/${project.id}/charts`}>Open charts</Link>
             <Button onClick={() => setIsSettingsOpen(true)} variant="secondary"><Settings size={15} /> Settings</Button>
           </>
@@ -357,66 +334,26 @@ export default function ProjectDetailPage() {
         </form>
       ) : null}
       {error ? <ErrorState message={error} /> : null}
-      <ProjectTags tags={project.tags} />
-      <ProjectMetricSummary stats={projectStats} />
+      {!isComparisonActive ? <ProjectTags tags={project.tags} /> : null}
+      {!isComparisonActive ? <ProjectMetricSummary stats={projectStats} /> : null}
       {isComparisonActive ? (
-        <div className="project-comparison-layout">
-          <aside className="comparison-run-sidebar">
-            <div className="comparison-sidebar-heading">
-              <div>
-                <h2>Runs</h2>
-                <span>{projectRuns.length}</span>
-              </div>
-              <Button onClick={handleResetComparison} size="sm" variant="secondary">Reset</Button>
-            </div>
-            <ProjectRunFilters
-              query={query}
-              status={status}
-              tag={tag}
-              tags={tags}
-              startDate={startDate}
-              endDate={endDate}
-              onQueryChange={setQuery}
-              onStatusChange={setStatus}
-              onTagChange={setTag}
-              onStartDateChange={setStartDate}
-              onEndDateChange={setEndDate}
-            />
-            <RunTable
-              compact
-              disabledRunIds={disabledRunIds}
-              onRunSelect={handleRunSelect}
-              runColorMap={runColorMap}
-              runs={filteredRuns}
-              selectable
-              selectedRunIds={selectedRunIds}
-            />
-          </aside>
-          <RunComparisonWorkspace
-            activeComparison={activeComparison}
-            onApplyComparison={handleApplyComparison}
-            onReset={handleResetComparison}
-            onSaved={loadProjectWorkspace}
-            project={project}
-            savedComparisons={savedComparisons}
-            selectedRunIds={selectedRunIds}
-            sharedMetrics={sharedMetrics}
-          />
-        </div>
+        <RunComparisonWorkspace
+          activeComparison={activeComparison}
+          onApplyComparison={handleApplyComparison}
+          onReset={handleResetComparison}
+          onSaved={loadProjectWorkspace}
+          project={project}
+          savedComparisons={savedComparisons}
+          selectedRunIds={selectedRunIds}
+          sharedMetrics={sharedMetrics}
+        />
       ) : (
         <>
           <ProjectRunFilters
             query={query}
             status={status}
-            tag={tag}
-            tags={tags}
-            startDate={startDate}
-            endDate={endDate}
             onQueryChange={setQuery}
             onStatusChange={setStatus}
-            onTagChange={setTag}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
           />
           <div className="comparison-action-bar panel">
             <div>
