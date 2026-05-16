@@ -150,6 +150,7 @@
 
 .login-card label,
 .builder-panel label,
+.builder-controls label,
 .settings-panel label {
   color: var(--color-muted);
   display: grid;

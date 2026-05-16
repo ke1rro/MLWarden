@@ -1,4 +1,4 @@
-import { LineChart } from 'lucide-react'
+import { LineChart, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { loadAllCharts, loadProjects } from '@/api/workspace.js'
@@ -11,7 +11,6 @@ import { Toolbar } from '@/components/common/Toolbar.jsx'
 import { AppLayout } from '@/components/layout/AppLayout.jsx'
 
 export default function ChartsIndexPage() {
-  const [projects, setProjects] = useState([])
   const [charts, setCharts] = useState([])
   const [query, setQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -22,10 +21,7 @@ export default function ChartsIndexPage() {
     loadProjects()
       .then(async (nextProjects) => {
         const nextCharts = await loadAllCharts(nextProjects)
-        if (!cancelled) {
-          setProjects(nextProjects)
-          setCharts(nextCharts)
-        }
+        if (!cancelled) setCharts(nextCharts)
       })
       .catch((err) => {
         if (!cancelled) setError(err.message || 'Failed to load charts.')
@@ -34,9 +30,7 @@ export default function ChartsIndexPage() {
         if (!cancelled) setIsLoading(false)
       })
 
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [])
 
   const filteredCharts = useMemo(
@@ -56,23 +50,26 @@ export default function ChartsIndexPage() {
         <section className="panel empty-action-panel">
           <EmptyState title="No saved charts yet." message="Open a project chart builder to create reusable chart configurations." />
           <div className="button-row">
-            {projects.slice(0, 4).map((project) => (
-              <Link className="button button-secondary button-md" key={project.id} to={`/projects/${project.id}/charts`}>
-                <LineChart size={15} />
-                {project.name}
-              </Link>
-            ))}
+            <Link className="button button-secondary button-md" to="/charts/new">
+              <LineChart size={15} />
+              Open chart builder
+            </Link>
           </div>
         </section>
       ) : null}
-      {!isLoading && !error && charts.length ? (
+      {!isLoading && !error ? (
         <div className="card-grid">
+          <Link className="summary-card summary-card-new" to="/charts/new">
+            <Plus size={18} />
+            <strong>New chart</strong>
+            <span>Create a new chart</span>
+          </Link>
           {filteredCharts.map((chart) => (
             <Link
               className="summary-card"
               data-search-text={`${chart.name} ${chart.projectName} ${chart.chart_type}`}
               key={chart.id}
-              to={`/projects/${chart.projectId}/charts`}
+              to={`/projects/${chart.projectId}/charts?chart=${chart.id}`}
             >
               <LineChart size={18} />
               <strong>{chart.name}</strong>

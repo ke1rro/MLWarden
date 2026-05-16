@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { cancelRun, failRun, finishRun, startRun } from '@/api/runs.js'
 import { loadAllRuns, loadProjects } from '@/api/workspace.js'
 import { EmptyState } from '@/components/common/EmptyState.jsx'
 import { ErrorState } from '@/components/common/ErrorState.jsx'
@@ -17,6 +18,13 @@ export default function RunsPage() {
   const [status, setStatus] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+
+  const reload = useCallback(() => {
+    loadProjects()
+      .then((projects) => loadAllRuns(projects))
+      .then((nextRuns) => setRuns(nextRuns))
+      .catch((err) => setError(err.message || 'Failed to load runs.'))
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -47,6 +55,19 @@ export default function RunsPage() {
     [query, runs, status],
   )
 
+  async function handleRunAction(run, action) {
+    setError('')
+    try {
+      if (action === 'start') await startRun(run.id)
+      if (action === 'finish') await finishRun(run.id)
+      if (action === 'fail') await failRun(run.id, { error_message: 'Marked failed from UI' })
+      if (action === 'cancel') await cancelRun(run.id)
+      reload()
+    } catch (err) {
+      setError(err.message || 'Run action failed.')
+    }
+  }
+
   return (
     <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Runs' }]}>
       <PageHeader title="Runs" subtitle="All experiment runs across local projects." />
@@ -61,7 +82,7 @@ export default function RunsPage() {
       {!isLoading && !error && !runs.length ? (
         <EmptyState title="No runs yet." message="Create a project run or start a worker to populate this view." />
       ) : null}
-      {!isLoading && !error && runs.length ? <RunTable runs={filteredRuns} /> : null}
+      {!isLoading && !error && runs.length ? <RunTable runs={filteredRuns} onRunAction={handleRunAction} /> : null}
     </AppLayout>
   )
 }
