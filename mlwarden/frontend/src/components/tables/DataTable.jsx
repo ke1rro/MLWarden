@@ -4,6 +4,7 @@ import { JsonPreview } from '@/components/common/JsonPreview.jsx'
 import { EmptyState } from '@/components/common/EmptyState.jsx'
 import { ErrorState } from '@/components/common/ErrorState.jsx'
 import { LoadingState } from '@/components/common/LoadingState.jsx'
+import { rowsToCsv, saveTextFile } from '@/shared/downloads.js'
 
 const pageSize = 3
 
@@ -13,6 +14,7 @@ export function DataTable({ tables, loadTableRows }) {
   const [rows, setRows] = useState([])
   const [totalRows, setTotalRows] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
   const [error, setError] = useState('')
   const selectedTable = tables.find((table) => table.name === selectedName)
 
@@ -61,6 +63,31 @@ export function DataTable({ tables, loadTableRows }) {
     return <EmptyState title="No tables logged yet." message="Validation results and workflow tables will appear here." />
   }
 
+  async function handleDownloadCsv() {
+    if (!selectedTable) return
+    setIsDownloading(true)
+    setError('')
+    try {
+      let exportRows = rows
+      if (loadTableRows) {
+        exportRows = []
+        let offset = 0
+        let total = 0
+        do {
+          const result = await loadTableRows(selectedTable.name, { limit: 500, offset })
+          exportRows.push(...result.rows)
+          total = result.total
+          offset += result.rows.length
+        } while (exportRows.length < total && offset > 0)
+      }
+      await saveTextFile(rowsToCsv(exportRows), `${selectedTable.name}.csv`, 'text/csv;charset=utf-8')
+    } catch (err) {
+      setError(err.message || 'Failed to download CSV.')
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
   return (
     <section className="table-workspace">
       <aside className="table-selector">
@@ -78,7 +105,9 @@ export function DataTable({ tables, loadTableRows }) {
             <h2>{selectedTable?.name}</h2>
             <p>Rows are loaded from backend worker-reported JSON data.</p>
           </div>
-          <Button variant="secondary">Download CSV</Button>
+          <Button disabled={isDownloading || !rows.length} onClick={handleDownloadCsv} variant="secondary">
+            {isDownloading ? 'Preparing CSV...' : 'Download CSV'}
+          </Button>
         </header>
         {isLoading ? <LoadingState message="Loading table rows..." /> : null}
         {error ? <ErrorState message={error} /> : null}
@@ -92,7 +121,7 @@ export function DataTable({ tables, loadTableRows }) {
             </thead>
             <tbody>
               {pageRows.map((row, rowIndex) => (
-                <tr key={`${selectedName}-${rowIndex}`}>
+                <tr data-search-text={`${selectedName} ${JSON.stringify(row)}`} key={`${selectedName}-${rowIndex}`}>
                   {columns.map((column) => (
                     <td className="truncate-cell" key={column}>
                       {typeof row[column] === 'object' ? <JsonPreview value={row[column]} /> : row[column]}

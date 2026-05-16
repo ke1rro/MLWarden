@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { getMetricSummary, getMetrics } from '@/api/metrics.js'
 import { Button } from '@/components/common/Button.jsx'
 import { MetricChart } from './MetricChart.jsx'
 import { PanelCard } from './PanelCard.jsx'
+import { dataUrlToBlob, saveBlob } from '@/shared/downloads.js'
 
 export function ChartBuilder({ project, runs, savedCharts, onSaveChart }) {
   const [name, setName] = useState('')
@@ -17,6 +18,7 @@ export function ChartBuilder({ project, runs, savedCharts, onSaveChart }) {
   const [metricSeries, setMetricSeries] = useState({})
   const [error, setError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const previewChartRef = useRef(null)
   const selectedSeries = metricSeries[yAxis] || []
 
   const metricNames = useMemo(() => Object.keys(metricSeries), [metricSeries])
@@ -59,7 +61,13 @@ export function ChartBuilder({ project, runs, savedCharts, onSaveChart }) {
     setError('')
     setIsSaving(true)
     try {
-      const override = overrideJson.trim() ? JSON.parse(overrideJson) : {}
+      let override = {}
+      try {
+        override = overrideJson.trim() ? JSON.parse(overrideJson) : {}
+      } catch {
+        setError('ECharts override is not valid JSON.')
+        return
+      }
       await onSaveChart({
         name: name.trim() || `${yAxis} ${chartType}`,
         chart_type: chartType,
@@ -79,6 +87,17 @@ export function ChartBuilder({ project, runs, savedCharts, onSaveChart }) {
     } finally {
       setIsSaving(false)
     }
+  }
+
+  async function handleExportPreview(format) {
+    if (!previewChartRef.current) return
+    const dataUrl = previewChartRef.current.getDataURL({
+      type: format,
+      pixelRatio: 2,
+      backgroundColor: '#ffffff',
+    })
+    const mimeType = format === 'svg' ? 'image/svg+xml' : 'image/png'
+    await saveBlob(dataUrlToBlob(dataUrl), `${name.trim() || yAxis || 'chart'}.${format}`, mimeType)
   }
 
   return (
@@ -119,7 +138,9 @@ export function ChartBuilder({ project, runs, savedCharts, onSaveChart }) {
         <label>Advanced ECharts override<textarea value={overrideJson} onChange={(event) => setOverrideJson(event.target.value)} rows={6} /></label>
         {error ? <p className="form-error">{error}</p> : null}
         <div className="button-row">
-          <Button variant="secondary">Preview</Button>
+          <Button onClick={() => setError('')} variant="secondary">Preview</Button>
+          <Button disabled={!selectedSeries.length} onClick={() => handleExportPreview('png')} variant="secondary">Export PNG</Button>
+          <Button disabled={!selectedSeries.length} onClick={() => handleExportPreview('svg')} variant="secondary">Export SVG</Button>
           <Button disabled={isSaving || !onSaveChart} onClick={handleSave}>{isSaving ? 'Saving...' : 'Save chart'}</Button>
         </div>
         {savedCharts?.length ? (
@@ -137,7 +158,7 @@ export function ChartBuilder({ project, runs, savedCharts, onSaveChart }) {
           </div>
         </header>
         <PanelCard title={yAxis}>
-          <MetricChart title={yAxis} series={selectedSeries} type={chartType} area={chartType === 'area'} />
+          <MetricChart title={yAxis} series={selectedSeries} type={chartType} area={chartType === 'area'} onReady={(chart) => { previewChartRef.current = chart }} />
         </PanelCard>
       </section>
     </div>

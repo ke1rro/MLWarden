@@ -2,13 +2,16 @@ import { MetricCard } from '@/components/common/MetricCard.jsx'
 import { JsonPreview } from '@/components/common/JsonPreview.jsx'
 
 export function RunOverview({ run, metricSummaries }) {
+  const primarySummary = metricSummaries.find((summary) => summary.name.toLowerCase().includes('best')) || metricSummaries[0]
+  const primaryValue = primarySummary ? (primarySummary.max ?? primarySummary.latest ?? 'n/a') : 'n/a'
+
   return (
     <div className="overview-grid">
       <section className="panel">
         <h2>Run summary</h2>
         <div className="metric-grid compact">
           <MetricCard label="Status" value={run.status} detail={run.duration} />
-          <MetricCard label="Best PSNR" value={run.bestPsnr ?? 'n/a'} detail="validation" />
+          <MetricCard label={primarySummary?.name || 'Metric'} value={primaryValue} detail={primarySummary ? 'best observed' : 'not logged'} />
           <MetricCard label="Final loss" value={run.finalLoss ?? 'n/a'} detail="latest" />
         </div>
         <h3>Parameters</h3>

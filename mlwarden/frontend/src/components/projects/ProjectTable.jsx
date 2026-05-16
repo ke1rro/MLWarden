@@ -23,7 +23,7 @@ export function ProjectTable({ projects }) {
         </thead>
         <tbody>
           {projects.map((project) => (
-            <tr key={project.id}>
+            <tr data-search-text={`${project.name} ${project.description} ${project.tags.join(' ')}`} key={project.id}>
               <td>
                 <Link className="table-link" to={`/projects/${project.id}`}>
                   {project.name}

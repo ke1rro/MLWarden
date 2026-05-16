@@ -117,6 +117,7 @@
   font-family: var(--font-mono);
   font-size: 12px;
   max-height: 540px;
+  min-height: min(520px, calc(100vh - 260px));
   overflow: auto;
   padding: var(--space-2);
 }
@@ -162,5 +163,14 @@
 @media (max-width: 900px) {
   .table-workspace {
     grid-template-columns: 1fr;
+  }
+
+  .log-row {
+    align-items: start;
+    grid-template-columns: 72px 54px minmax(0, 1fr);
+  }
+
+  .log-row .json-preview {
+    grid-column: 1 / -1;
   }
 }

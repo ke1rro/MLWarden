@@ -167,3 +167,9 @@
   display: grid;
   gap: var(--space-3);
 }
+
+.settings-panel .settings-toggle {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+}

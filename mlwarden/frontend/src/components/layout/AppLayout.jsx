@@ -1,8 +1,11 @@
 import { SidebarNav } from './SidebarNav.jsx'
 import { TopBar } from './TopBar.jsx'
 import { ToastHost } from '@/components/notifications/ToastHost.jsx'
+import { useSearchHighlight } from '@/shared/useSearchHighlight.js'
 
 export function AppLayout({ breadcrumbs, children }) {
+  useSearchHighlight()
+
   return (
     <div className="app-shell">
       <TopBar breadcrumbs={breadcrumbs} />
