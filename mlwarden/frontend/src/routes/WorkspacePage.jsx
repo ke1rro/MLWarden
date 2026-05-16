@@ -47,7 +47,6 @@ export default function WorkspacePage() {
       <PageHeader
         title="Workspace"
         subtitle="Overview of the local MLWarden instance across projects, runs, charts, and artifacts."
-        actions={<Link className="button button-primary button-md" to="/projects">Manage projects</Link>}
       />
       {isLoading ? <LoadingState message="Loading workspace..." /> : null}
       {error ? <ErrorState message={error} /> : null}
