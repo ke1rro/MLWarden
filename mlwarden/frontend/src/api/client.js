@@ -1,14 +1,19 @@
 export const AUTH_STORAGE_KEY = 'mlwarden.auth'
 
-const FALLBACK_API_BASE_URL =
-  typeof window === 'undefined' ? 'http://localhost:8000' : window.location.origin
-const FALLBACK_WS_BASE_URL =
-  typeof window === 'undefined'
-    ? 'ws://localhost:8000'
-    : window.location.origin.replace(/^http/, 'ws')
+const DEV_FALLBACK_API = 'http://localhost:8000'
+const DEV_FALLBACK_WS = 'ws://localhost:8000'
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || FALLBACK_API_BASE_URL).replace(/\/$/, '')
-export const WS_BASE_URL = (import.meta.env.VITE_WS_BASE_URL || FALLBACK_WS_BASE_URL).replace(/\/$/, '')
+const hasApiEnv = Object.prototype.hasOwnProperty.call(import.meta.env, 'VITE_API_BASE_URL')
+const hasWsEnv = Object.prototype.hasOwnProperty.call(import.meta.env, 'VITE_WS_BASE_URL')
+
+const API_BASE_URL = (hasApiEnv ? import.meta.env.VITE_API_BASE_URL : DEV_FALLBACK_API).replace(
+  /\/$/,
+  '',
+)
+export const WS_BASE_URL = (hasWsEnv ? import.meta.env.VITE_WS_BASE_URL : DEV_FALLBACK_WS).replace(
+  /\/$/,
+  '',
+)
 
 export class ApiClientError extends Error {
   constructor(message, { status = 0, code = 'request_error', details = {} } = {}) {

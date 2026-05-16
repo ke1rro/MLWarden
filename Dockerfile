@@ -2,6 +2,9 @@ FROM node:20-alpine AS frontend-build
 
 WORKDIR /frontend
 
+ENV VITE_API_BASE_URL=
+ENV VITE_WS_BASE_URL=
+
 COPY mlwarden/frontend/package.json mlwarden/frontend/package-lock.json* ./
 RUN npm install
 
@@ -28,7 +31,7 @@ ENV APP_DATABASE_URL=sqlite:////data/mlwarden.sqlite3
 ENV APP_ARTIFACT_ROOT=/data/artifacts
 ENV APP_STATIC_FRONTEND_PATH=/app/static
 ENV APP_MAX_UPLOAD_MB=512
-ENV APP_CORS_ORIGINS=http://localhost:5173,http://localhost:5174
+ENV APP_CORS_ORIGINS=
 ENV APP_AUTH_TOKEN_TTL_MINUTES=1440
 
 EXPOSE 8000

@@ -8,11 +8,6 @@ from ..database import database_is_healthy
 router = APIRouter()
 
 
-@router.get("/")
-async def root() -> dict[str, str]:
-    return {"status": "ok", "service": "mlwarden-backend"}
-
-
 @router.get("/api/health")
 async def health() -> dict[str, str]:
     try:
@@ -22,8 +17,7 @@ async def health() -> dict[str, str]:
         database = "error"
     storage = (
         "ok"
-        if settings.artifact_root.exists()
-        and os.access(settings.artifact_root, os.W_OK)
+        if settings.artifact_root.exists() and os.access(settings.artifact_root, os.W_OK)
         else "error"
     )
     status = "ok" if database == "ok" and storage == "ok" else "error"

@@ -1,11 +1,11 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .core import ApiError, error_payload, init_db, safe_string, settings
@@ -32,13 +32,14 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     app = FastAPI(title="MLWarden Backend", version=settings.version, lifespan=lifespan)
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins or ["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    if settings.cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.cors_origins,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
     @app.exception_handler(ApiError)
     async def api_error_handler(_: Request, exc: ApiError) -> JSONResponse:
@@ -82,6 +83,17 @@ def create_app() -> FastAPI:
 
     static_path = settings.static_frontend_path
     if static_path and static_path.exists():
+        static_root = static_path.resolve()
+        index_file = static_root / "index.html"
+        if not index_file.is_file():
+            return app
+
+        def is_within_static(path: Path) -> bool:
+            try:
+                path.relative_to(static_root)
+                return True
+            except ValueError:
+                return False
 
         @app.api_route(
             "/api/{path:path}",
@@ -94,7 +106,27 @@ def create_app() -> FastAPI:
                 content=error_payload("not_found", "Not found", {}),
             )
 
-        app.mount("/", StaticFiles(directory=static_path, html=True), name="frontend")
+        @app.get("/", include_in_schema=False)
+        async def frontend_root() -> FileResponse:
+            return FileResponse(index_file)
+
+        @app.get("/{path:path}", include_in_schema=False)
+        async def frontend_fallback(path: str):
+            if path.startswith("api/"):
+                return JSONResponse(
+                    status_code=404,
+                    content=error_payload("not_found", "Not found", {}),
+                )
+
+            clean_path = path.lstrip("/")
+            if not clean_path:
+                return FileResponse(index_file)
+
+            requested = (static_root / clean_path).resolve()
+            if is_within_static(requested) and requested.is_file():
+                return FileResponse(requested)
+
+            return FileResponse(index_file)
 
     return app
 
