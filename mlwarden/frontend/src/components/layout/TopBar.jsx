@@ -1,7 +1,6 @@
 import { Bell, CircleHelp, LogOut, Search, UserRound } from 'lucide-react'
 import { API_BASE_URL } from '@/api/client.js'
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth } from '@/app/useAuth.js'
 import { useNotifications } from '@/app/useNotifications.js'
 import { Button } from '@/components/common/Button.jsx'
@@ -12,6 +11,11 @@ import { IconButton } from '@/components/common/IconButton.jsx'
 import { Logo } from '@/components/common/Logo.jsx'
 import { Modal } from '@/components/common/Modal.jsx'
 import { NotificationHistory } from '@/components/notifications/NotificationHistory.jsx'
+
+const base_url =
+  API_BASE_URL === ""
+    ? window.location.origin
+    : API_BASE_URL;
 
 export function TopBar({ breadcrumbs }) {
   const { user, logout } = useAuth()
@@ -144,7 +148,7 @@ export function TopBar({ breadcrumbs }) {
               <pre>{`from mlwarden import Tracker
 
 tracker = Tracker(
-    base_url="${API_BASE_URL}",
+    base_url="${base_url}",
     api_key="dev-api-key",
     project="demo-project",
 )`}</pre>
