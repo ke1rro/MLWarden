@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { adaptProject, adaptRun } from '@/api/adapters.js'
-import { createChart, listCharts, updateChart } from '@/api/charts.js'
+import { createChart, deleteChart, listCharts, updateChart } from '@/api/charts.js'
 import { getProject } from '@/api/projects.js'
 import { listRuns } from '@/api/runs.js'
 import { useNotifications } from '@/app/useNotifications.js'
@@ -72,6 +72,11 @@ export default function ChartsPage() {
     await loadWorkspace(projectId)
   }
 
+  async function handleDeleteChart(chartId) {
+    await deleteChart(chartId)
+    await loadWorkspace(projectId)
+  }
+
   const initialChart = initialChartId ? savedCharts.find((c) => c.id === initialChartId) : null
 
   const breadcrumbs = [
@@ -92,6 +97,7 @@ export default function ChartsPage() {
             runs={runs}
             savedCharts={savedCharts}
             onSaveChart={projectId ? handleSaveChart : null}
+            onDeleteChart={handleDeleteChart}
             onProjectChange={handleProjectChange}
             initialChart={initialChart}
           />

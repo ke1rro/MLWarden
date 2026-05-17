@@ -217,6 +217,47 @@
   color: var(--color-muted);
 }
 
+.summary-card-with-actions {
+  padding: 0;
+  position: relative;
+}
+
+.summary-card-with-actions .summary-card-body {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  gap: var(--space-2);
+  min-height: 140px;
+  padding: var(--space-4);
+  text-align: left;
+  width: 100%;
+}
+
+.summary-card-with-actions .summary-card-body strong {
+  font-weight: 650;
+}
+
+.summary-card-with-actions .summary-card-body span {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.summary-card-with-actions:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.summary-card-menu {
+  position: absolute;
+  right: var(--space-2);
+  top: var(--space-2);
+}
+
+
+
 .empty-action-panel {
   display: grid;
   gap: var(--space-3);

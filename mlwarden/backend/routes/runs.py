@@ -25,16 +25,11 @@ from ..database import (
     insert_run,
     list_run_params,
     list_run_rows,
+    soft_delete_run,
     update_run_row,
     upsert_run_params,
 )
-from ..models import (
-    ParamsPutRequest,
-    RunCreate,
-    RunFailRequest,
-    RunFinishRequest,
-    RunUpdate,
-)
+from ..models import ParamsPutRequest, RunCreate, RunFailRequest, RunFinishRequest, RunUpdate
 
 router = APIRouter()
 
@@ -113,9 +108,7 @@ async def create_run(
 
 
 @router.get("/api/runs/{run_id}")
-async def get_run(
-    run_id: str, _: Principal = Depends(require_principal)
-) -> dict[str, Any]:
+async def get_run(run_id: str, _: Principal = Depends(require_principal)) -> dict[str, Any]:
     return run_response(get_run_or_404(run_id))
 
 
@@ -136,9 +129,7 @@ async def update_run(
         "description": payload.get("description", run.get("description")),
         "status": status,
         "tags": require_list(payload.get("tags", run.get("tags")), "tags"),
-        "metadata": require_dict(
-            payload.get("metadata", run.get("metadata")), "metadata"
-        ),
+        "metadata": require_dict(payload.get("metadata", run.get("metadata")), "metadata"),
         "summary": require_dict(payload.get("summary", run.get("summary")), "summary"),
         "updated_at": utc_timestamp(),
     }
@@ -150,6 +141,23 @@ async def update_run(
         payload={"status": updated["status"], "run_name": updated["name"]},
     )
     return run_response(get_run_or_404(run_id))
+
+
+@router.delete("/api/runs/{run_id}")
+async def delete_run(
+    run_id: str,
+    _: Principal = Depends(require_principal),
+) -> dict[str, Any]:
+    run = get_run_or_404(run_id)
+    now = utc_timestamp()
+    soft_delete_run(run_id, now)
+    await create_event(
+        "run.deleted",
+        project_id=run["project_id"],
+        run_id=run_id,
+        payload={"run_name": run["name"]},
+    )
+    return {"id": run_id, "deleted": True}
 
 
 @router.post("/api/runs/{run_id}/start")

@@ -208,6 +208,13 @@ def update_run_status_row(
     )
 
 
+def soft_delete_run(run_id: str, deleted_at: str) -> None:
+    execute(
+        "UPDATE runs SET deleted_at = ?, updated_at = ? WHERE id = ?",
+        (deleted_at, deleted_at, run_id),
+    )
+
+
 def upsert_run_params(run_id: str, params: dict[str, Any]) -> None:
     now = utc_timestamp()
     for key, value in params.items():

@@ -31,3 +31,7 @@ export function failRun(runId, body = {}) {
 export function cancelRun(runId) {
   return apiRequest(`/api/runs/${runId}/cancel`, { method: 'POST' })
 }
+
+export function deleteRun(runId) {
+  return apiRequest(`/api/runs/${runId}`, { method: 'DELETE' })
+}

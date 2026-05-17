@@ -56,6 +56,7 @@ export function ChartBuilder({
   runs,
   onSaveChart,
   onAddPanel,
+  onDeleteChart,
   onProjectChange,
   initialConfig,
   initialMetricSeries,
@@ -72,6 +73,7 @@ export function ChartBuilder({
   const [preview, setPreview] = useState({ config: null, option: null })
   const [error, setError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const previewChartRef = useRef(null)
 
   const activeChartId = initialChart?.id
@@ -331,6 +333,25 @@ export function ChartBuilder({
             <Button disabled={!preview.option} onClick={() => handleExport('png')} variant="secondary">Export PNG</Button>
             <Button disabled={!preview.option} onClick={() => handleExport('svg')} variant="secondary">Export SVG</Button>
             <Button disabled={isSaving || (!onSaveChart && !onAddPanel)} onClick={handleSave}>{isSaving ? 'Saving...' : saveLabel}</Button>
+            {activeChartId && onDeleteChart ? (
+              <Button
+                disabled={isDeleting}
+                onClick={async () => {
+                  if (!window.confirm('Delete this saved chart? This cannot be undone.')) return
+                  setIsDeleting(true)
+                  try {
+                    await onDeleteChart(activeChartId)
+                  } catch (err) {
+                    setError(err.message || 'Failed to delete chart.')
+                  } finally {
+                    setIsDeleting(false)
+                  }
+                }}
+                variant="secondary"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete chart'}
+              </Button>
+            ) : null}
           </div>
         </div>
       </div>

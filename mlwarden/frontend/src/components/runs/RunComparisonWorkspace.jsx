@@ -255,7 +255,6 @@ export function RunComparisonWorkspace({
     const metrics = [...exportSelection]
     try {
       for (const metric of metrics) {
-        // eslint-disable-next-line no-await-in-loop
         await handleExportMetric(metric, format)
       }
     } catch (err) {

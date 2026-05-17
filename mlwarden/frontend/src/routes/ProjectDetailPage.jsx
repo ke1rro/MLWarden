@@ -1,14 +1,16 @@
-import { Plus, Settings } from 'lucide-react'
+import { ExternalLink as ExternalLinkIcon, Plus, Settings, Trash2 as Trash2Icon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { adaptProject, adaptRun } from '@/api/adapters.js'
-import { listCharts } from '@/api/charts.js'
+import { deleteChart, listCharts } from '@/api/charts.js'
 import { getMetricSummary, getMetrics } from '@/api/metrics.js'
 import { getProject } from '@/api/projects.js'
 import { listRunComparisons } from '@/api/runComparisons.js'
-import { cancelRun, createRun, failRun, finishRun, listRuns, startRun } from '@/api/runs.js'
+import { createRun, deleteRun, listRuns } from '@/api/runs.js'
 import { useNotifications } from '@/app/useNotifications.js'
 import { Button } from '@/components/common/Button.jsx'
+import { ActionMenu } from '@/components/common/ActionMenu.jsx'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog.jsx'
 import { ErrorState } from '@/components/common/ErrorState.jsx'
 import { LoadingState } from '@/components/common/LoadingState.jsx'
 import { MetricCard } from '@/components/common/MetricCard.jsx'
@@ -85,7 +87,7 @@ function SavedChartPanel({ chart, previewSeries }) {
   )
 }
 
-function SavedChartsSection({ project, savedCharts, previewSeries }) {
+function SavedChartsSection({ project, savedCharts, previewSeries, onDeleteChart }) {
   return (
     <section className="saved-charts">
       <header className="section-header">
@@ -93,12 +95,20 @@ function SavedChartsSection({ project, savedCharts, previewSeries }) {
           <h2>Saved charts</h2>
           <p>Project-level chart configurations with preview data from the latest run.</p>
         </div>
-        <Link className="button button-secondary button-md" to={`/projects/${project.id}/charts`}>Chart builder</Link>
+        <Link className="button button-secondary button-md" to={`/projects/${project.id}/charts`}>New chart</Link>
       </header>
       <div className="chart-grid compact-grid">
         {savedCharts.map((chart) => (
-          <div data-search-text={`${chart.name} ${project.name}`} key={chart.id}>
+          <div data-search-text={`${chart.name} ${project.name}`} key={chart.id} style={{ position: 'relative' }}>
             <SavedChartPanel chart={chart} previewSeries={previewSeries} />
+            {onDeleteChart ? (
+              <div style={{ position: 'absolute', top: 8, right: 8 }}>
+                <ActionMenu items={[
+                  { label: 'Open in builder', icon: ExternalLinkIcon, onSelect: () => window.location.assign(`/projects/${project.id}/charts?chart=${chart.id}`) },
+                  { label: 'Delete chart', icon: Trash2Icon, onSelect: () => onDeleteChart(chart) },
+                ]} />
+              </div>
+            ) : null}
           </div>
         ))}
       </div>
@@ -127,6 +137,10 @@ export default function ProjectDetailPage() {
   const [selectedRunIds, setSelectedRunIds] = useState(initialSelectedRunIds)
   const [isComparisonActive, setIsComparisonActive] = useState(initialSelectedRunIds.length >= 2)
   const [activeComparison, setActiveComparison] = useState(null)
+  const [deleteChartTarget, setDeleteChartTarget] = useState(null)
+  const [isDeletingChart, setIsDeletingChart] = useState(false)
+  const [deleteRunTarget, setDeleteRunTarget] = useState(null)
+  const [isDeletingRun, setIsDeletingRun] = useState(false)
   const lastSelectedRunIndex = useRef(null)
   const { subscribe } = useNotifications()
 
@@ -267,16 +281,31 @@ export default function ProjectDetailPage() {
     }
   }
 
-  async function handleRunAction(run, action) {
+  async function handleConfirmDeleteRun() {
+    setIsDeletingRun(true)
     setError('')
     try {
-      if (action === 'start') await startRun(run.id)
-      if (action === 'finish') await finishRun(run.id)
-      if (action === 'fail') await failRun(run.id, { error_message: 'Marked failed from UI' })
-      if (action === 'cancel') await cancelRun(run.id)
+      await deleteRun(deleteRunTarget.id)
+      setDeleteRunTarget(null)
       await loadProjectWorkspace()
     } catch (err) {
-      setError(err.message || 'Run action failed.')
+      setError(err.message || 'Failed to delete run.')
+    } finally {
+      setIsDeletingRun(false)
+    }
+  }
+
+  async function handleConfirmDeleteChart() {
+    setIsDeletingChart(true)
+    setError('')
+    try {
+      await deleteChart(deleteChartTarget.id)
+      setDeleteChartTarget(null)
+      await loadProjectWorkspace()
+    } catch (err) {
+      setError(err.message || 'Failed to delete chart.')
+    } finally {
+      setIsDeletingChart(false)
     }
   }
 
@@ -367,14 +396,19 @@ export default function ProjectDetailPage() {
           </div>
           <RunTable
             disabledRunIds={disabledRunIds}
-            onRunAction={handleRunAction}
+            onDeleteRun={(run) => setDeleteRunTarget(run)}
             onRunSelect={handleRunSelect}
             runColorMap={runColorMap}
             runs={filteredRuns}
             selectable
             selectedRunIds={selectedRunIds}
           />
-          <SavedChartsSection project={project} savedCharts={savedCharts} previewSeries={previewSeries} />
+          <SavedChartsSection
+            onDeleteChart={(chart) => setDeleteChartTarget(chart)}
+            previewSeries={previewSeries}
+            project={project}
+            savedCharts={savedCharts}
+          />
         </>
       )}
       {isSettingsOpen ? (
@@ -403,6 +437,26 @@ export default function ProjectDetailPage() {
             </section>
           </div>
         </Modal>
+      ) : null}
+      {deleteRunTarget ? (
+        <ConfirmDialog
+          title={`Delete "${deleteRunTarget.name}"?`}
+          message="This will permanently remove the run and its data. This action cannot be undone."
+          confirmLabel={isDeletingRun ? 'Deleting...' : 'Delete'}
+          cancelLabel="Cancel"
+          onCancel={() => setDeleteRunTarget(null)}
+          onConfirm={handleConfirmDeleteRun}
+        />
+      ) : null}
+      {deleteChartTarget ? (
+        <ConfirmDialog
+          title={`Delete chart "${deleteChartTarget.name}"?`}
+          message="This will permanently remove the saved chart configuration. This action cannot be undone."
+          confirmLabel={isDeletingChart ? 'Deleting...' : 'Delete'}
+          cancelLabel="Cancel"
+          onCancel={() => setDeleteChartTarget(null)}
+          onConfirm={handleConfirmDeleteChart}
+        />
       ) : null}
     </AppLayout>
   )

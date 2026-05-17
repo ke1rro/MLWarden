@@ -1,28 +1,12 @@
-import { Link } from 'react-router-dom'
-import { Button } from '@/components/common/Button.jsx'
+import { ExternalLink, Trash2 } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { ActionMenu } from '@/components/common/ActionMenu.jsx'
 import { EmptyState } from '@/components/common/EmptyState.jsx'
 import { StatusBadge } from '@/components/common/StatusBadge.jsx'
 
-function RunActions({ run, onRunAction }) {
-  if (!onRunAction) return null
-
-  return (
-    <div className="table-actions">
-      {run.status === 'created' ? <Button onClick={() => onRunAction(run, 'start')} size="sm" variant="secondary">Start</Button> : null}
-      {run.status === 'running' ? <Button onClick={() => onRunAction(run, 'finish')} size="sm" variant="secondary">Finish</Button> : null}
-      {['created', 'running'].includes(run.status) ? (
-        <>
-          <Button onClick={() => onRunAction(run, 'fail')} size="sm" variant="secondary">Fail</Button>
-          <Button onClick={() => onRunAction(run, 'cancel')} size="sm" variant="secondary">Cancel</Button>
-        </>
-      ) : null}
-    </div>
-  )
-}
-
 export function RunTable({
   runs,
-  onRunAction,
+  onDeleteRun,
   selectable = false,
   selectedRunIds = [],
   disabledRunIds = [],
@@ -30,6 +14,7 @@ export function RunTable({
   onRunSelect,
   compact = false,
 }) {
+  const navigate = useNavigate()
   const showProject = runs.some((run) => run.projectName)
   const selectedSet = new Set(selectedRunIds)
   const disabledSet = new Set(disabledRunIds)
@@ -104,38 +89,43 @@ export function RunTable({
             const isSelected = selectedSet.has(run.id)
             const isDisabled = disabledSet.has(run.id)
             return (
-            <tr className={`${isSelected ? 'is-selected' : ''} ${isDisabled ? 'is-disabled' : ''}`} data-search-text={`${run.name} ${run.projectName || ''} ${run.status} ${run.tags.join(' ')}`} key={run.id}>
-              {selectable ? (
-                <td className="run-select-cell">
-                  {renderCheckbox(run, index, isSelected, isDisabled)}
-                </td>
-              ) : null}
-              <td><StatusBadge status={run.status} /></td>
-              <td>
-                <Link className="table-link" to={`/runs/${run.id}`}>
-                  {runColorMap[run.id] ? <span className="run-color-dot" style={{ background: runColorMap[run.id] }} /> : null}
-                  {run.name}
-                </Link>
-              </td>
-              {showProject ? (
+              <tr className={`${isSelected ? 'is-selected' : ''} ${isDisabled ? 'is-disabled' : ''}`} data-search-text={`${run.name} ${run.projectName || ''} ${run.status} ${run.tags.join(' ')}`} key={run.id}>
+                {selectable ? (
+                  <td className="run-select-cell">
+                    {renderCheckbox(run, index, isSelected, isDisabled)}
+                  </td>
+                ) : null}
+                <td><StatusBadge status={run.status} /></td>
                 <td>
-                  {run.projectId ? <Link className="table-link" to={`/projects/${run.projectId}`}>{run.projectName}</Link> : run.projectName}
+                  <Link className="table-link" to={`/runs/${run.id}`}>
+                    {runColorMap[run.id] ? <span className="run-color-dot" style={{ background: runColorMap[run.id] }} /> : null}
+                    {run.name}
+                  </Link>
                 </td>
-              ) : null}
-              <td>{run.created}</td>
-              <td>{run.duration}</td>
-              <td>{run.bestPsnr ?? run.finalLoss ?? 'n/a'}</td>
-              <td>{run.finalLoss ?? 'n/a'}</td>
-              <td>
-                <div className="tag-row">
-                  {run.tags.map((tag) => (
-                    <span className="tag" key={tag}>{tag}</span>
-                  ))}
-                </div>
-              </td>
-              <td>{run.worker}</td>
-              <td><RunActions run={run} onRunAction={onRunAction} /></td>
-            </tr>
+                {showProject ? (
+                  <td>
+                    {run.projectId ? <Link className="table-link" to={`/projects/${run.projectId}`}>{run.projectName}</Link> : run.projectName}
+                  </td>
+                ) : null}
+                <td>{run.created}</td>
+                <td>{run.duration}</td>
+                <td>{run.bestPsnr ?? run.finalLoss ?? 'n/a'}</td>
+                <td>{run.finalLoss ?? 'n/a'}</td>
+                <td>
+                  <div className="tag-row">
+                    {run.tags.map((tag) => (
+                      <span className="tag" key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                </td>
+                <td>{run.worker}</td>
+                <td>
+                  <ActionMenu items={[
+                    { label: 'View run', icon: ExternalLink, onSelect: () => navigate(`/runs/${run.id}`) },
+                    ...(onDeleteRun ? [{ label: 'Delete run', icon: Trash2, onSelect: () => onDeleteRun(run) }] : []),
+                  ]} />
+                </td>
+              </tr>
             )
           })}
         </tbody>

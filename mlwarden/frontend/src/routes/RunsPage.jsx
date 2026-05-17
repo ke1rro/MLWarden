@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { cancelRun, failRun, finishRun, startRun } from '@/api/runs.js'
+import { deleteRun } from '@/api/runs.js'
 import { loadAllRuns, loadProjects } from '@/api/workspace.js'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog.jsx'
 import { EmptyState } from '@/components/common/EmptyState.jsx'
 import { ErrorState } from '@/components/common/ErrorState.jsx'
 import { LoadingState } from '@/components/common/LoadingState.jsx'
@@ -18,6 +19,8 @@ export default function RunsPage() {
   const [status, setStatus] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const reload = useCallback(() => {
     loadProjects()
@@ -55,16 +58,17 @@ export default function RunsPage() {
     [query, runs, status],
   )
 
-  async function handleRunAction(run, action) {
+  async function handleConfirmDelete() {
+    setIsDeleting(true)
     setError('')
     try {
-      if (action === 'start') await startRun(run.id)
-      if (action === 'finish') await finishRun(run.id)
-      if (action === 'fail') await failRun(run.id, { error_message: 'Marked failed from UI' })
-      if (action === 'cancel') await cancelRun(run.id)
+      await deleteRun(deleteTarget.id)
+      setDeleteTarget(null)
       reload()
     } catch (err) {
-      setError(err.message || 'Run action failed.')
+      setError(err.message || 'Failed to delete run.')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -82,7 +86,22 @@ export default function RunsPage() {
       {!isLoading && !error && !runs.length ? (
         <EmptyState title="No runs yet." message="Create a project run or start a worker to populate this view." />
       ) : null}
-      {!isLoading && !error && runs.length ? <RunTable runs={filteredRuns} onRunAction={handleRunAction} /> : null}
+      {!isLoading && !error && runs.length ? (
+        <RunTable
+          runs={filteredRuns}
+          onDeleteRun={(run) => setDeleteTarget(run)}
+        />
+      ) : null}
+      {deleteTarget ? (
+        <ConfirmDialog
+          title={`Delete "${deleteTarget.name}"?`}
+          message="This will permanently remove the run and its data. This action cannot be undone."
+          confirmLabel={isDeleting ? 'Deleting...' : 'Delete'}
+          cancelLabel="Cancel"
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={handleConfirmDelete}
+        />
+      ) : null}
     </AppLayout>
   )
 }
