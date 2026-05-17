@@ -3,11 +3,9 @@ import { API_BASE_URL } from '@/api/client.js'
 import { Button } from '@/components/common/Button.jsx'
 import { AppLayout } from '@/components/layout/AppLayout.jsx'
 
+const installCommand = 'pip install git+https://github.com/ke1rro/MLWarden.git'
+
 const questions = [
-  {
-    question: 'What is MLWarden?',
-    answer: 'MLWarden is a lightweight, local-first platform for tracking machine learning experiments. It allows you to visualize metrics, manage model artifacts, and compare runs without relying on cloud services.',
-  },
   {
     question: 'Where is my experiment data stored?',
     answer: 'All your data, metrics, and artifacts are stored completely locally on your machine or self-hosted server. Your experiment data never leaves your infrastructure, ensuring complete privacy and offline capabilities.',
@@ -32,6 +30,7 @@ const questions = [
 
 export default function FaqPage() {
   const [copied, setCopied] = useState(false)
+  const [installCopied, setInstallCopied] = useState(false)
   const baseUrl = API_BASE_URL === '' ? window.location.origin : API_BASE_URL
   const sdkSnippet = useMemo(() => `from mlwarden import Tracker
 
@@ -55,6 +54,12 @@ run.finish(summary={"final_loss": 0.218})`, [baseUrl])
     window.setTimeout(() => setCopied(false), 1600)
   }
 
+  async function handleInstallCopy() {
+    await navigator.clipboard?.writeText(installCommand)
+    setInstallCopied(true)
+    window.setTimeout(() => setInstallCopied(false), 1600)
+  }
+
   return (
     <AppLayout
       breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'FAQ' }]}
@@ -62,16 +67,40 @@ run.finish(summary={"final_loss": 0.218})`, [baseUrl])
       subtitle="Answers and SDK reference for local MLWarden experiment tracking."
     >
       <div className="faq-page">
+        {/* 1. What is MLWarden? */}
         <section className="panel faq-section">
           <header className="section-header">
             <div>
-              <h2>SDK guide</h2>
+              <h2>What is MLWarden?</h2>
+              <p>MLWarden is a lightweight, local-first platform for tracking machine learning experiments. It allows you to visualize metrics, manage model artifacts, and compare runs without relying on cloud services.</p>
+            </div>
+          </header>
+        </section>
+
+        {/* 2. How to install SDK? */}
+        <section className="panel faq-section">
+          <header className="section-header">
+            <div>
+              <h2>How to install SDK?</h2>
+              <p>To install SDK, use pip package manager with the following command:</p>
+            </div>
+            <Button onClick={handleInstallCopy} variant="secondary">{installCopied ? 'Copied' : 'Copy command'}</Button>
+          </header>
+          <pre className="faq-code">{installCommand}</pre>
+        </section>
+
+        {/* 3. How to use SDK? */}
+        <section className="panel faq-section">
+          <header className="section-header">
+            <div>
+              <h2>How to use SDK?</h2>
               <p>Minimal Python client flow for sending local experiment data to this workspace.</p>
             </div>
             <Button onClick={handleCopy} variant="secondary">{copied ? 'Copied' : 'Copy snippet'}</Button>
           </header>
           <pre className="faq-code">{sdkSnippet}</pre>
         </section>
+
         <section className="faq-list">
           {questions.map((item) => (
             <article className="panel faq-item" key={item.question}>
