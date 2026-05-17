@@ -37,6 +37,283 @@ function buildMetricSeries(comparison, metric) {
     .filter((series) => series.data.length)
 }
 
+function ComparisonHeader({
+  bestRunName,
+  bestValue,
+  isSaving,
+  onExportCharts,
+  onExportJson,
+  onReset,
+  onSave,
+  primaryMetric,
+  selectedRunCount,
+  canSave,
+}) {
+  return (
+    <header className="combined-run-header panel">
+      <div className="combined-run-title">
+        <h2>Comparison</h2>
+        <span>{selectedRunCount} runs</span>
+        {primaryMetric ? <span>{primaryMetric}</span> : null}
+        {bestRunName !== 'n/a' ? <span>Best: {bestRunName}{bestValue === null || bestValue === undefined ? '' : ` (${Number(bestValue).toPrecision(4)})`}</span> : null}
+      </div>
+      <div className="button-row">
+        <Button disabled={isSaving || !canSave} onClick={onSave}>{isSaving ? 'Saving...' : 'Save comparison'}</Button>
+        <Button onClick={onExportCharts} variant="secondary"><Download size={14} /> Export charts</Button>
+        <Button onClick={onExportJson} variant="secondary">Export JSON</Button>
+        <Button onClick={onReset} variant="secondary">Reset selection</Button>
+      </div>
+    </header>
+  )
+}
+
+function ComparisonToolbar({ onOpenMetricPicker, onOpenSettings, onQueryChange, query }) {
+  return (
+    <Toolbar>
+      <SearchInput value={query} onChange={onQueryChange} placeholder="Search panels" />
+      <IconButton label="Comparison settings" icon={Settings} onClick={onOpenSettings} />
+      <IconButton label="Filter panels" icon={SlidersHorizontal} onClick={onOpenMetricPicker} />
+    </Toolbar>
+  )
+}
+
+function ComparisonStatusMessages({ error, isLoading, sharedMetrics }) {
+  return (
+    <>
+      {error ? <p className="form-error">{error}</p> : null}
+      {isLoading ? <p className="muted-copy">Loading comparison...</p> : null}
+      {!sharedMetrics.length ? <EmptyState title="Selected runs have no shared metrics." message="Choose runs that logged at least one metric with the same name." /> : null}
+    </>
+  )
+}
+
+function ComparisonChartGrid({
+  getOption,
+  onChartReady,
+  onExportMetric,
+  onReorderPanel,
+  onResizePanel,
+  onToggleAxisLabel,
+  panelAxisLabels,
+  panelSizes,
+  primaryMetric,
+  visibleMetrics,
+}) {
+  return (
+    <div className="chart-grid comparison-chart-grid">
+      {visibleMetrics.map((metric) => {
+        const panelSize = panelSizes[metric] || (metric === primaryMetric ? 'lg' : 'md')
+        const axisLabels = panelAxisLabels[metric] || {}
+        const showXAxisLabel = axisLabels.showXAxisLabel ?? false
+        const showYAxisLabel = axisLabels.showYAxisLabel ?? false
+
+        return (
+          <PanelCard
+            actions={[
+              {
+                label: showXAxisLabel ? 'Hide x-axis label' : 'Show x-axis label',
+                icon: showXAxisLabel ? EyeOff : Eye,
+                onSelect: () => onToggleAxisLabel(metric, 'showXAxisLabel', !showXAxisLabel),
+              },
+              {
+                label: showYAxisLabel ? 'Hide y-axis label' : 'Show y-axis label',
+                icon: showYAxisLabel ? EyeOff : Eye,
+                onSelect: () => onToggleAxisLabel(metric, 'showYAxisLabel', !showYAxisLabel),
+              },
+              { label: 'Export PNG', icon: Download, onSelect: () => onExportMetric(metric, 'png') },
+              { label: 'Export SVG', icon: Download, onSelect: () => onExportMetric(metric, 'svg') },
+            ]}
+            className="comparison-chart-panel"
+            draggable
+            key={metric}
+            onDragOver={(event) => event.preventDefault()}
+            onDragStart={(event) => {
+              event.dataTransfer.effectAllowed = 'move'
+              event.dataTransfer.setData('text/plain', metric)
+            }}
+            onDrop={(event) => {
+              event.preventDefault()
+              onReorderPanel(event.dataTransfer.getData('text/plain'), metric)
+            }}
+            onRemove={null}
+            onResize={(size) => onResizePanel(metric, size)}
+            size={panelSize}
+            title={metric}
+          >
+            <MetricChart
+              option={getOption(metric)}
+              onReady={(chart) => onChartReady(metric, chart)}
+            />
+          </PanelCard>
+        )
+      })}
+    </div>
+  )
+}
+
+function ComparisonSettingsDialog({
+  config,
+  onApplyComparison,
+  onChange,
+  onClose,
+  primaryMetric,
+  savedComparisons,
+  sharedMetrics,
+}) {
+  return (
+    <Modal title="Comparison settings" description="Adjust how the selected runs are compared." onClose={onClose} size="lg">
+      <div className="comparison-settings-grid">
+        <label>
+          Rename comparison
+          <input value={config.name} onChange={(event) => onChange({ name: event.target.value })} />
+        </label>
+        <label>
+          Primary metric
+          <select value={primaryMetric} onChange={(event) => onChange({ primaryMetric: event.target.value, metrics: [event.target.value, ...config.metrics.filter((metric) => metric !== event.target.value)] })}>
+            {sharedMetrics.map((metric) => <option key={metric} value={metric}>{metric}</option>)}
+          </select>
+        </label>
+        <label>
+          X-axis
+          <select value={config.xAxis} onChange={(event) => onChange({ xAxis: event.target.value })}>
+            <option value="step">step</option>
+            <option value="epoch">epoch</option>
+            <option value="timestamp">timestamp</option>
+          </select>
+        </label>
+        <label>
+          Chart type
+          <select value={config.chartType} onChange={(event) => onChange({ chartType: event.target.value })}>
+            <option value="line">line</option>
+            <option value="scatter">scatter</option>
+            <option value="bar">bar</option>
+          </select>
+        </label>
+        <label>
+          Aggregation
+          <select value={config.aggregation} onChange={(event) => onChange({ aggregation: event.target.value })}>
+            <option value="none">none</option>
+            <option value="mean">mean</option>
+            <option value="median">median</option>
+            <option value="min">min</option>
+            <option value="max">max</option>
+          </select>
+        </label>
+        <label>
+          Smoothing
+          <input max="0.95" min="0" onChange={(event) => onChange({ smoothing: event.target.value })} step="0.05" type="number" value={config.smoothing} />
+        </label>
+        <label>
+          Best value
+          <select value={config.metricDirection} onChange={(event) => onChange({ metricDirection: event.target.value })}>
+            <option value="auto">auto</option>
+            <option value="maximize">maximize</option>
+            <option value="minimize">minimize</option>
+          </select>
+        </label>
+        <div className="comparison-toggle-row">
+          <label className="toggle-control"><input checked={config.showLegend} onChange={(event) => onChange({ showLegend: event.target.checked })} type="checkbox" /> Legend</label>
+          <label className="toggle-control"><input checked={config.showTooltip} onChange={(event) => onChange({ showTooltip: event.target.checked })} type="checkbox" /> Tooltip</label>
+          <label className="toggle-control"><input checked={config.highlightBestRun} onChange={(event) => onChange({ highlightBestRun: event.target.checked })} type="checkbox" /> Highlight best</label>
+        </div>
+      </div>
+      {savedComparisons.length ? (
+        <div className="saved-comparisons comparison-modal-section">
+          <strong>Saved comparisons</strong>
+          {savedComparisons.map((comparisonItem) => (
+            <button key={comparisonItem.id} onClick={() => onApplyComparison?.(comparisonItem)} type="button">{comparisonItem.name}</button>
+          ))}
+        </div>
+      ) : null}
+    </Modal>
+  )
+}
+
+function MetricPickerDialog({ config, onClose, onToggleMetric, selectedMetricSet, sharedMetrics }) {
+  return (
+    <Modal title={`Charts ${config.metrics.length}`} description="Choose which shared metrics are visible as panels." onClose={onClose}>
+      <div className="comparison-metric-picker">
+        {sharedMetrics.map((metric) => (
+          <label className="toggle-control" key={metric}>
+            <input checked={selectedMetricSet.has(metric)} onChange={() => onToggleMetric(metric)} type="checkbox" />
+            {metric}
+          </label>
+        ))}
+      </div>
+    </Modal>
+  )
+}
+
+function ExportDialog({
+  exportSelection,
+  isExporting,
+  onBulkExport,
+  onClose,
+  onSelectionChange,
+  visibleMetrics,
+}) {
+  return (
+    <Modal
+      title="Export charts"
+      description="Select which metric panels to export."
+      onClose={onClose}
+    >
+      <div className="comparison-export-modal">
+        <div className="comparison-export-actions">
+          <button
+            className="button button-secondary button-sm"
+            type="button"
+            onClick={() => onSelectionChange(new Set(visibleMetrics))}
+          >
+            Select all
+          </button>
+          <button
+            className="button button-secondary button-sm"
+            type="button"
+            onClick={() => onSelectionChange(new Set())}
+          >
+            Clear
+          </button>
+        </div>
+        <div className="comparison-metric-picker">
+          {visibleMetrics.map((metric) => (
+            <label className="toggle-control" key={metric}>
+              <input
+                checked={exportSelection.has(metric)}
+                type="checkbox"
+                onChange={() => {
+                  onSelectionChange((prev) => {
+                    const next = new Set(prev)
+                    if (next.has(metric)) next.delete(metric)
+                    else next.add(metric)
+                    return next
+                  })
+                }}
+              />
+              {metric}
+            </label>
+          ))}
+        </div>
+        <div className="button-row comparison-export-footer">
+          <Button
+            disabled={!exportSelection.size || isExporting}
+            onClick={() => onBulkExport('png')}
+          >
+            {isExporting ? 'Exporting…' : 'Export PNG'}
+          </Button>
+          <Button
+            disabled={!exportSelection.size || isExporting}
+            onClick={() => onBulkExport('svg')}
+            variant="secondary"
+          >
+            {isExporting ? 'Exporting…' : 'Export SVG'}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 export function RunComparisonWorkspace({
   project,
   selectedRunIds,
@@ -67,12 +344,9 @@ export function RunComparisonWorkspace({
   const [query, setQuery] = useState('')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isMetricPickerOpen, setIsMetricPickerOpen] = useState(false)
-  // Drag-to-reorder: metric order stored separately so reorder doesn't wipe config
   const [metricOrder, setMetricOrder] = useState([])
-  // Per-panel size overrides
   const [panelSizes, setPanelSizes] = useState({})
   const [panelAxisLabels, setPanelAxisLabels] = useState({})
-  // Multi-chart export modal
   const [isExportOpen, setIsExportOpen] = useState(false)
   const [exportSelection, setExportSelection] = useState(new Set())
   const [isExporting, setIsExporting] = useState(false)
@@ -155,7 +429,6 @@ export function RunComparisonWorkspace({
   }, [config.aggregation, config.metricDirection, config.metrics, config.smoothing, config.xAxis, project.id, selectedRunIds])
 
   const selectedMetricSet = new Set(config.metrics)
-  // Use metricOrder to drive the display order; fall back to config.metrics
   const orderedMetrics = metricOrder.length
     ? metricOrder.filter((m) => config.metrics.includes(m))
     : config.metrics
@@ -202,6 +475,11 @@ export function RunComparisonWorkspace({
         [key]: value,
       },
     }))
+  }
+
+  function handleChartReady(metric, chart) {
+    if (chart) chartRefs.current[metric] = chart
+    else delete chartRefs.current[metric]
   }
 
   function optionForMetric(metric) {
@@ -286,7 +564,6 @@ export function RunComparisonWorkspace({
   }
 
   function openExportModal() {
-    // Pre-select all visible metrics
     setExportSelection(new Set(visibleMetrics))
     setIsExportOpen(true)
   }
@@ -305,226 +582,70 @@ export function RunComparisonWorkspace({
 
   return (
     <section className="run-comparison-workspace">
-      <header className="combined-run-header panel">
-        <div className="combined-run-title">
-          <h2>Comparison</h2>
-          <span>{selectedRunIds.length} runs</span>
-          {primaryMetric ? <span>{primaryMetric}</span> : null}
-          {bestRunName !== 'n/a' ? <span>Best: {bestRunName}{bestValue === null || bestValue === undefined ? '' : ` (${Number(bestValue).toPrecision(4)})`}</span> : null}
-        </div>
-        <div className="button-row">
-          <Button disabled={isSaving || !config.metrics.length} onClick={handleSaveComparison}>{isSaving ? 'Saving...' : 'Save comparison'}</Button>
-          <Button onClick={openExportModal} variant="secondary"><Download size={14} /> Export charts</Button>
-          <Button onClick={handleExportJson} variant="secondary">Export JSON</Button>
-          <Button onClick={onReset} variant="secondary">Reset selection</Button>
-        </div>
-      </header>
-
-      <Toolbar>
-        <SearchInput value={query} onChange={setQuery} placeholder="Search panels" />
-        <IconButton label="Comparison settings" icon={Settings} onClick={() => setIsSettingsOpen(true)} />
-        <IconButton label="Filter panels" icon={SlidersHorizontal} onClick={() => setIsMetricPickerOpen(true)} />
-      </Toolbar>
-
-      {error ? <p className="form-error">{error}</p> : null}
-      {isLoading ? <p className="muted-copy">Loading comparison...</p> : null}
-      {!sharedMetrics.length ? <EmptyState title="Selected runs have no shared metrics." message="Choose runs that logged at least one metric with the same name." /> : null}
-
-      <div className="chart-grid comparison-chart-grid">
-        {visibleMetrics.map((metric) => {
-          const panelSize = panelSizes[metric] || (metric === primaryMetric ? 'lg' : 'md')
-          const axisLabels = panelAxisLabels[metric] || {}
-          const showXAxisLabel = axisLabels.showXAxisLabel ?? false
-          const showYAxisLabel = axisLabels.showYAxisLabel ?? false
-          return (
-            <PanelCard
-              actions={[
-                {
-                  label: showXAxisLabel ? 'Hide x-axis label' : 'Show x-axis label',
-                  icon: showXAxisLabel ? EyeOff : Eye,
-                  onSelect: () => handleToggleAxisLabel(metric, 'showXAxisLabel', !showXAxisLabel),
-                },
-                {
-                  label: showYAxisLabel ? 'Hide y-axis label' : 'Show y-axis label',
-                  icon: showYAxisLabel ? EyeOff : Eye,
-                  onSelect: () => handleToggleAxisLabel(metric, 'showYAxisLabel', !showYAxisLabel),
-                },
-                { label: 'Export PNG', icon: Download, onSelect: () => handleExportMetric(metric, 'png') },
-                { label: 'Export SVG', icon: Download, onSelect: () => handleExportMetric(metric, 'svg') },
-              ]}
-              className="comparison-chart-panel"
-              draggable
-              key={metric}
-              onDragOver={(event) => event.preventDefault()}
-              onDragStart={(event) => {
-                event.dataTransfer.effectAllowed = 'move'
-                event.dataTransfer.setData('text/plain', metric)
-              }}
-              onDrop={(event) => {
-                event.preventDefault()
-                handleReorderPanel(event.dataTransfer.getData('text/plain'), metric)
-              }}
-              onRemove={null}
-              onResize={(size) => handleResizePanel(metric, size)}
-              size={panelSize}
-              title={metric}
-            >
-              <MetricChart
-                option={optionForMetric(metric)}
-                onReady={(chart) => {
-                  if (chart) chartRefs.current[metric] = chart
-                  else delete chartRefs.current[metric]
-                }}
-              />
-            </PanelCard>
-          )
-        })}
-      </div>
+      <ComparisonHeader
+        bestRunName={bestRunName}
+        bestValue={bestValue}
+        canSave={Boolean(config.metrics.length)}
+        isSaving={isSaving}
+        onExportCharts={openExportModal}
+        onExportJson={handleExportJson}
+        onReset={onReset}
+        onSave={handleSaveComparison}
+        primaryMetric={primaryMetric}
+        selectedRunCount={selectedRunIds.length}
+      />
+      <ComparisonToolbar
+        onOpenMetricPicker={() => setIsMetricPickerOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onQueryChange={setQuery}
+        query={query}
+      />
+      <ComparisonStatusMessages error={error} isLoading={isLoading} sharedMetrics={sharedMetrics} />
+      <ComparisonChartGrid
+        getOption={optionForMetric}
+        onChartReady={handleChartReady}
+        onExportMetric={handleExportMetric}
+        onReorderPanel={handleReorderPanel}
+        onResizePanel={handleResizePanel}
+        onToggleAxisLabel={handleToggleAxisLabel}
+        panelAxisLabels={panelAxisLabels}
+        panelSizes={panelSizes}
+        primaryMetric={primaryMetric}
+        visibleMetrics={visibleMetrics}
+      />
       {visibleMetrics.length ? null : <EmptyState title="No panels match this filter." message="Clear the panel search or enable another comparison metric." />}
 
-      {/* Comparison settings modal */}
       {isSettingsOpen ? (
-        <Modal title="Comparison settings" description="Adjust how the selected runs are compared." onClose={() => setIsSettingsOpen(false)} size="lg">
-          <div className="comparison-settings-grid">
-            <label>
-              Rename comparison
-              <input value={config.name} onChange={(event) => updateConfig({ name: event.target.value })} />
-            </label>
-            <label>
-              Primary metric
-              <select value={primaryMetric} onChange={(event) => updateConfig({ primaryMetric: event.target.value, metrics: [event.target.value, ...config.metrics.filter((metric) => metric !== event.target.value)] })}>
-                {sharedMetrics.map((metric) => <option key={metric} value={metric}>{metric}</option>)}
-              </select>
-            </label>
-            <label>
-              X-axis
-              <select value={config.xAxis} onChange={(event) => updateConfig({ xAxis: event.target.value })}>
-                <option value="step">step</option>
-                <option value="epoch">epoch</option>
-                <option value="timestamp">timestamp</option>
-              </select>
-            </label>
-            <label>
-              Chart type
-              <select value={config.chartType} onChange={(event) => updateConfig({ chartType: event.target.value })}>
-                <option value="line">line</option>
-                <option value="scatter">scatter</option>
-                <option value="bar">bar</option>
-              </select>
-            </label>
-            <label>
-              Aggregation
-              <select value={config.aggregation} onChange={(event) => updateConfig({ aggregation: event.target.value })}>
-                <option value="none">none</option>
-                <option value="mean">mean</option>
-                <option value="median">median</option>
-                <option value="min">min</option>
-                <option value="max">max</option>
-              </select>
-            </label>
-            <label>
-              Smoothing
-              <input max="0.95" min="0" onChange={(event) => updateConfig({ smoothing: event.target.value })} step="0.05" type="number" value={config.smoothing} />
-            </label>
-            <label>
-              Best value
-              <select value={config.metricDirection} onChange={(event) => updateConfig({ metricDirection: event.target.value })}>
-                <option value="auto">auto</option>
-                <option value="maximize">maximize</option>
-                <option value="minimize">minimize</option>
-              </select>
-            </label>
-            <div className="comparison-toggle-row">
-              <label className="toggle-control"><input checked={config.showLegend} onChange={(event) => updateConfig({ showLegend: event.target.checked })} type="checkbox" /> Legend</label>
-              <label className="toggle-control"><input checked={config.showTooltip} onChange={(event) => updateConfig({ showTooltip: event.target.checked })} type="checkbox" /> Tooltip</label>
-              <label className="toggle-control"><input checked={config.highlightBestRun} onChange={(event) => updateConfig({ highlightBestRun: event.target.checked })} type="checkbox" /> Highlight best</label>
-            </div>
-          </div>
-          {savedComparisons.length ? (
-            <div className="saved-comparisons comparison-modal-section">
-              <strong>Saved comparisons</strong>
-              {savedComparisons.map((comparisonItem) => (
-                <button key={comparisonItem.id} onClick={() => onApplyComparison?.(comparisonItem)} type="button">{comparisonItem.name}</button>
-              ))}
-            </div>
-          ) : null}
-        </Modal>
+        <ComparisonSettingsDialog
+          config={config}
+          onApplyComparison={onApplyComparison}
+          onChange={updateConfig}
+          onClose={() => setIsSettingsOpen(false)}
+          primaryMetric={primaryMetric}
+          savedComparisons={savedComparisons}
+          sharedMetrics={sharedMetrics}
+        />
       ) : null}
 
-      {/* Metric picker modal */}
       {isMetricPickerOpen ? (
-        <Modal title={`Charts ${config.metrics.length}`} description="Choose which shared metrics are visible as panels." onClose={() => setIsMetricPickerOpen(false)}>
-          <div className="comparison-metric-picker">
-            {sharedMetrics.map((metric) => (
-              <label className="toggle-control" key={metric}>
-                <input checked={selectedMetricSet.has(metric)} onChange={() => toggleMetric(metric)} type="checkbox" />
-                {metric}
-              </label>
-            ))}
-          </div>
-        </Modal>
+        <MetricPickerDialog
+          config={config}
+          onClose={() => setIsMetricPickerOpen(false)}
+          onToggleMetric={toggleMetric}
+          selectedMetricSet={selectedMetricSet}
+          sharedMetrics={sharedMetrics}
+        />
       ) : null}
 
-      {/* Multi-chart export modal */}
       {isExportOpen ? (
-        <Modal
-          title="Export charts"
-          description="Select which metric panels to export."
+        <ExportDialog
+          exportSelection={exportSelection}
+          isExporting={isExporting}
+          onBulkExport={handleBulkExport}
           onClose={() => setIsExportOpen(false)}
-        >
-          <div className="comparison-export-modal">
-            <div className="comparison-export-actions">
-              <button
-                className="button button-secondary button-sm"
-                type="button"
-                onClick={() => setExportSelection(new Set(visibleMetrics))}
-              >
-                Select all
-              </button>
-              <button
-                className="button button-secondary button-sm"
-                type="button"
-                onClick={() => setExportSelection(new Set())}
-              >
-                Clear
-              </button>
-            </div>
-            <div className="comparison-metric-picker">
-              {visibleMetrics.map((metric) => (
-                <label className="toggle-control" key={metric}>
-                  <input
-                    checked={exportSelection.has(metric)}
-                    type="checkbox"
-                    onChange={() => {
-                      setExportSelection((prev) => {
-                        const next = new Set(prev)
-                        if (next.has(metric)) next.delete(metric)
-                        else next.add(metric)
-                        return next
-                      })
-                    }}
-                  />
-                  {metric}
-                </label>
-              ))}
-            </div>
-            <div className="button-row comparison-export-footer">
-              <Button
-                disabled={!exportSelection.size || isExporting}
-                onClick={() => handleBulkExport('png')}
-              >
-                {isExporting ? 'Exporting…' : 'Export PNG'}
-              </Button>
-              <Button
-                disabled={!exportSelection.size || isExporting}
-                onClick={() => handleBulkExport('svg')}
-                variant="secondary"
-              >
-                {isExporting ? 'Exporting…' : 'Export SVG'}
-              </Button>
-            </div>
-          </div>
-        </Modal>
+          onSelectionChange={setExportSelection}
+          visibleMetrics={visibleMetrics}
+        />
       ) : null}
     </section>
   )

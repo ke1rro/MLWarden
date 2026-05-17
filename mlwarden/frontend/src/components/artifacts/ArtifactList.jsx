@@ -1,10 +1,10 @@
 import { useMemo, useRef, useState } from 'react'
-import { Download } from 'lucide-react'
 import { Button } from '@/components/common/Button.jsx'
 import { EmptyState } from '@/components/common/EmptyState.jsx'
 import { MetadataModal } from '@/components/common/MetadataModal.jsx'
 import { SearchInput } from '@/components/common/SearchInput.jsx'
 import { Toolbar } from '@/components/common/Toolbar.jsx'
+import { ArtifactTable } from './ArtifactTable.jsx'
 
 function ArtifactUploadForm({ onUpload }) {
   const [file, setFile] = useState(null)
@@ -94,43 +94,11 @@ export function ArtifactList({ artifacts, onUpload, onDownload }) {
       </Toolbar>
       {isUploadOpen ? <ArtifactUploadForm onUpload={onUpload} /> : null}
       {!artifacts.length ? <EmptyState title="No artifacts uploaded." message="Checkpoints, reports, CSV files, and ZIP bundles will appear here." /> : null}
-      <div className="table-shell">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Path</th>
-              <th>Size</th>
-              <th>Content type</th>
-              <th>Created</th>
-              <th>Metadata</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredArtifacts.map((artifact) => (
-              <tr data-search-text={`${artifact.name} ${artifact.path} ${artifact.contentType}`} key={artifact.id}>
-                <td>{artifact.name}</td>
-                <td className="mono-cell">{artifact.path}</td>
-                <td>{artifact.size}</td>
-                <td>{artifact.contentType}</td>
-                <td>{artifact.created}</td>
-                <td>
-                  <Button size="sm" variant="secondary" onClick={() => setSelectedMetadata({ title: `${artifact.name} metadata`, value: artifact.metadata })}>
-                    View metadata
-                  </Button>
-                </td>
-                <td>
-                  <Button onClick={() => onDownload?.(artifact)} variant="secondary">
-                    <Download size={15} />
-                    Download
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ArtifactTable
+        artifacts={filteredArtifacts}
+        onDownload={onDownload}
+        onViewMetadata={(artifact) => setSelectedMetadata({ title: `${artifact.name} metadata`, value: artifact.metadata })}
+      />
       {selectedMetadata ? (
         <MetadataModal title={selectedMetadata.title} value={selectedMetadata.value} onClose={() => setSelectedMetadata(null)} />
       ) : null}

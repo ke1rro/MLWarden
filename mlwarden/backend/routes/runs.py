@@ -30,6 +30,7 @@ from ..database import (
     upsert_run_params,
 )
 from ..models import ParamsPutRequest, RunCreate, RunFailRequest, RunFinishRequest, RunUpdate
+from ..settings import settings
 
 router = APIRouter()
 
@@ -148,6 +149,8 @@ async def delete_run(
     run_id: str,
     _: Principal = Depends(require_principal),
 ) -> dict[str, Any]:
+    if not settings.allow_run_delete:
+        raise ApiError(403, "delete_disabled", "Run deletion is disabled")
     run = get_run_or_404(run_id)
     now = utc_timestamp()
     soft_delete_run(run_id, now)

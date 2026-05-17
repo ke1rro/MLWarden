@@ -9,7 +9,7 @@ lerna-debug.log*
 
 examples/outputs/*
 !examples/outputs/.gitkeep
-artifacts/
+/artifacts/
 
 node_modules
 dist

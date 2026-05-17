@@ -109,6 +109,31 @@ def test_authenticated_user_can_cancel_created_run(
     assert_utc_timestamp(body["finished_at"])
 
 
+def test_run_delete_respects_configuration(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    run_factory: Callable[..., dict[str, Any]],
+) -> None:
+    from backend.settings import settings
+
+    protected_run = run_factory()
+    original_allow = settings.allow_run_delete
+    try:
+        object.__setattr__(settings, "allow_run_delete", False)
+        delete_disabled = client.delete(f"/api/runs/{protected_run['id']}", headers=auth_headers)
+        assert_error_response(delete_disabled, 403)
+    finally:
+        object.__setattr__(settings, "allow_run_delete", original_allow)
+
+    deleted_run = run_factory()
+    delete_response = client.delete(f"/api/runs/{deleted_run['id']}", headers=auth_headers)
+    assert_status(delete_response, 200)
+    assert response_body(delete_response) == {"id": deleted_run["id"], "deleted": True}
+
+    detail_response = client.get(f"/api/runs/{deleted_run['id']}", headers=auth_headers)
+    assert_error_response(detail_response, 404)
+
+
 def test_terminal_run_cannot_transition_without_resume_endpoint(
     client: TestClient,
     api_key_headers: dict[str, str],

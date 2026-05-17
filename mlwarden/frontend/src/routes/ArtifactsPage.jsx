@@ -1,9 +1,7 @@
-import { Download } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { downloadArtifact } from '@/api/artifacts.js'
 import { loadAllArtifacts, loadAllRuns, loadProjects } from '@/api/workspace.js'
-import { Button } from '@/components/common/Button.jsx'
+import { ArtifactTable } from '@/components/artifacts/ArtifactTable.jsx'
 import { EmptyState } from '@/components/common/EmptyState.jsx'
 import { ErrorState } from '@/components/common/ErrorState.jsx'
 import { LoadingState } from '@/components/common/LoadingState.jsx'
@@ -61,43 +59,14 @@ export default function ArtifactsPage() {
       {error ? <ErrorState message={error} /> : null}
       {!isLoading && !error && !artifacts.length ? <EmptyState title="No artifacts uploaded." message="Upload artifacts from a worker run or the run artifact tab." /> : null}
       {!isLoading && !error && artifacts.length ? (
-        <div className="table-shell">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Project</th>
-                <th>Run</th>
-                <th>Path</th>
-                <th>Size</th>
-                <th>Metadata</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredArtifacts.map((artifact) => (
-                <tr data-search-text={`${artifact.name} ${artifact.path} ${artifact.projectName} ${artifact.runName}`} key={artifact.id}>
-                  <td>{artifact.name}</td>
-                  <td><Link className="table-link" to={`/projects/${artifact.projectId}`}>{artifact.projectName}</Link></td>
-                  <td><Link className="table-link" to={`/runs/${artifact.runId}?tab=artifacts`}>{artifact.runName}</Link></td>
-                  <td className="mono-cell">{artifact.path}</td>
-                  <td>{artifact.size}</td>
-                  <td>
-                    <Button size="sm" variant="secondary" onClick={() => setSelectedMetadata({ title: `${artifact.name} metadata`, value: artifact.metadata })}>
-                      View metadata
-                    </Button>
-                  </td>
-                  <td>
-                    <Button onClick={() => handleDownload(artifact)} size="sm" variant="secondary">
-                      <Download size={15} />
-                      Download
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ArtifactTable
+          artifacts={filteredArtifacts}
+          compactActions
+          onDownload={handleDownload}
+          onViewMetadata={(artifact) => setSelectedMetadata({ title: `${artifact.name} metadata`, value: artifact.metadata })}
+          showProjectColumns
+          showTechnicalColumns={false}
+        />
       ) : null}
       {selectedMetadata ? (
         <MetadataModal title={selectedMetadata.title} value={selectedMetadata.value} onClose={() => setSelectedMetadata(null)} />

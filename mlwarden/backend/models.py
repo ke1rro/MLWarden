@@ -140,13 +140,3 @@ class RunCompareRequest(FlexibleModel):
     smoothing: float = 0
     aggregation: Literal["none", "mean", "median", "min", "max"] = "none"
     metric_direction: Literal["auto", "maximize", "minimize"] = "auto"
-
-
-class ErrorDetails(FlexibleModel):
-    code: str
-    message: str
-    details: JsonObject = Field(default_factory=dict)
-
-
-class ErrorResponse(FlexibleModel):
-    error: ErrorDetails

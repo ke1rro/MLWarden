@@ -57,6 +57,234 @@ function Field({ label, children }) {
   return <label>{label}{children}</label>
 }
 
+function ChartBuilderShell({ children }) {
+  return <div className="chart-builder chart-builder-vertical">{children}</div>
+}
+
+function ChartPreviewPanel({ chartPlaceholder, config, onChartReady, preview, project, selectedMetric }) {
+  const title = !project
+    ? 'Select a project'
+    : !config.runId
+      ? 'Choose a run'
+      : !selectedMetric
+        ? 'Choose a metric'
+        : `${project.name} · preview`
+
+  return (
+    <section className="builder-preview panel">
+      <header className="section-header">
+        <div>
+          <h2>{title}</h2>
+          <p>x: {config.xAxis} · y: {selectedMetric || 'none'}</p>
+        </div>
+      </header>
+      <PanelCard title="Preview">
+        <MetricChart option={preview.option} onReady={onChartReady} placeholder={chartPlaceholder} />
+      </PanelCard>
+    </section>
+  )
+}
+
+function ChartBuilderControls({ children, deleteConfirm, error, footer }) {
+  return (
+    <div className="builder-controls panel">
+      <div className="builder-controls-row">
+        {children}
+      </div>
+      {error ? <p className="form-error">{error}</p> : null}
+      {footer}
+      {deleteConfirm}
+    </div>
+  )
+}
+
+function ChartDataControls({
+  allProjects,
+  config,
+  metricNames,
+  onChange,
+  onProjectChange,
+  project,
+  runs,
+  selectedMetric,
+}) {
+  return (
+    <section className="builder-section builder-section-inline">
+      <h3>Data</h3>
+      <Field label="Name">
+        <input value={config.name} onChange={(event) => onChange({ name: event.target.value })} placeholder={selectedMetric ? `${selectedMetric} ${config.chartType}` : 'Chart name'} />
+      </Field>
+      {allProjects.length > 0 ? (
+        <Field label="Project">
+          <select value={project?.id || ''} onChange={(event) => event.target.value && onProjectChange?.(event.target.value)}>
+            {!project ? <option value="" disabled>Choose project…</option> : null}
+            {allProjects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+        </Field>
+      ) : null}
+      <Field label="Run">
+        <select value={config.runId} onChange={(event) => {
+          const nextRun = runs.find((run) => run.id === event.target.value)
+          onChange({ runId: event.target.value, metric: '', yAxis: '', color: runColorForRun(nextRun) })
+        }}>
+          {runs.map((run) => <option key={run.id} value={run.id}>{run.name}</option>)}
+        </select>
+      </Field>
+      <Field label="Y-Axis">
+        <select value={selectedMetric} onChange={(event) => onChange({ metric: event.target.value, yAxis: event.target.value })}>
+          <option value="">Choose metric</option>
+          {metricNames.map((metric) => <option key={metric} value={metric}>{metric}</option>)}
+        </select>
+      </Field>
+      <Field label="X-axis">
+        <select value={config.xAxis} onChange={(event) => onChange({ xAxis: event.target.value })}>
+          <option value="step">Step</option>
+          <option value="timestamp">Timestamp</option>
+        </select>
+      </Field>
+    </section>
+  )
+}
+
+function ChartDisplayControls({ config, onChange }) {
+  return (
+    <section className="builder-section builder-section-inline">
+      <h3>Chart</h3>
+      <Field label="Chart type">
+        <select value={config.chartType} onChange={(event) => onChange({ chartType: event.target.value, area: event.target.value === 'area' ? true : config.area })}>
+          <option value="line">Line</option>
+          <option value="scatter">Scatter</option>
+          <option value="bar">Bar</option>
+          <option value="area">Area</option>
+        </select>
+      </Field>
+      <Field label="Title">
+        <input value={config.title} onChange={(event) => onChange({ title: event.target.value })} />
+      </Field>
+      <Field label="Subtitle">
+        <input value={config.subtitle} onChange={(event) => onChange({ subtitle: event.target.value })} />
+      </Field>
+      <Field label="X-axis label">
+        <input value={config.xAxisLabel} onChange={(event) => onChange({ xAxisLabel: event.target.value })} />
+      </Field>
+      <Field label="Y-axis label">
+        <input value={config.yAxisLabel} onChange={(event) => onChange({ yAxisLabel: event.target.value })} />
+      </Field>
+      <div className="toggle-grid">
+        <label>
+          <input checked={config.showXAxisLabel} onChange={(event) => onChange({ showXAxisLabel: event.target.checked })} type="checkbox" />
+          X label
+        </label>
+        <label>
+          <input checked={config.showYAxisLabel} onChange={(event) => onChange({ showYAxisLabel: event.target.checked })} type="checkbox" />
+          Y label
+        </label>
+        <label>
+          <input checked={config.showLegend} onChange={(event) => onChange({ showLegend: event.target.checked })} type="checkbox" />
+          Legend
+        </label>
+        <label>
+          <input checked={config.showTooltip} onChange={(event) => onChange({ showTooltip: event.target.checked })} type="checkbox" />
+          Tooltip
+        </label>
+      </div>
+    </section>
+  )
+}
+
+function ChartStyleControls({ config, onChange }) {
+  return (
+    <section className="builder-section builder-section-inline">
+      <h3>Style</h3>
+      <div className="builder-field-row">
+        <Field label="Color">
+          <input value={config.color} onChange={(event) => onChange({ color: event.target.value })} type="color" />
+        </Field>
+        <Field label="Background">
+          <input value={config.backgroundColor} onChange={(event) => onChange({ backgroundColor: event.target.value })} type="color" />
+        </Field>
+      </div>
+      <div className="builder-field-row">
+        <Field label="Font size">
+          <input min="9" max="24" value={config.fontSize} onChange={(event) => onChange({ fontSize: event.target.value })} type="number" />
+        </Field>
+        <Field label="Line width">
+          <input min="1" max="10" value={config.lineWidth} onChange={(event) => onChange({ lineWidth: event.target.value })} type="number" />
+        </Field>
+      </div>
+      <div className="builder-field-row">
+        <Field label="Point size">
+          <input min="1" max="20" value={config.pointSize} onChange={(event) => onChange({ pointSize: event.target.value })} type="number" />
+        </Field>
+        <Field label="Bar width">
+          <input min="4" max="80" value={config.barWidth} onChange={(event) => onChange({ barWidth: event.target.value })} type="number" />
+        </Field>
+      </div>
+      <div className="toggle-grid">
+        <label>
+          <input checked={config.smooth} onChange={(event) => onChange({ smooth: event.target.checked })} type="checkbox" />
+          Smooth
+        </label>
+        <label>
+          <input checked={config.area} onChange={(event) => onChange({ area: event.target.checked })} type="checkbox" />
+          Area
+        </label>
+      </div>
+    </section>
+  )
+}
+
+function ChartAdvancedControls({ config, onChange }) {
+  return (
+    <section className="builder-section builder-section-inline">
+      <h3>Advanced</h3>
+      <div className="grid-inputs">
+        {['left', 'right', 'top', 'bottom'].map((side) => (
+          <Field key={side} label={side}>
+            <input
+              min="0"
+              value={config.grid[side]}
+              onChange={(event) => onChange({ grid: { ...config.grid, [side]: event.target.value } })}
+              type="number"
+            />
+          </Field>
+        ))}
+      </div>
+      <Field label="ECharts JSON override">
+        <textarea value={config.echartsOptionOverride} onChange={(event) => onChange({ echartsOptionOverride: event.target.value })} rows={4} />
+      </Field>
+    </section>
+  )
+}
+
+function ChartBuilderActions({ activeChartId, canSave, isSaving, onDelete, onExport, onSave, saveLabel }) {
+  return (
+    <div className="builder-actions-row">
+      <div className="button-row">
+        <Button disabled={!canSave} onClick={() => onExport('png')} variant="secondary">Export PNG</Button>
+        <Button disabled={!canSave} onClick={() => onExport('svg')} variant="secondary">Export SVG</Button>
+        <Button disabled={isSaving || !onSave} onClick={onSave}>{isSaving ? 'Saving...' : saveLabel}</Button>
+        {activeChartId && onDelete ? (
+          <Button onClick={onDelete} variant="secondary">Delete chart</Button>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+function DeleteChartConfirm({ config, isDeleting, onCancel, onConfirm }) {
+  return (
+    <ConfirmDialog
+      title={`Delete "${config.name || config.title || 'this chart'}"?`}
+      message="This will permanently remove the saved chart configuration. This action cannot be undone."
+      confirmLabel={isDeleting ? 'Deleting...' : 'Delete'}
+      cancelLabel="Cancel"
+      onCancel={onCancel}
+      onConfirm={onConfirm}
+    />
+  )
+}
+
 export function ChartBuilder({
   project,
   runs,
@@ -86,7 +314,6 @@ export function ChartBuilder({
 
   const activeChartId = initialChart?.id
 
-  // Load projects for the project switcher dropdown
   useEffect(() => {
     listProjects().then((res) => setAllProjects(res.items || [])).catch(() => {})
   }, [])
@@ -145,7 +372,6 @@ export function ChartBuilder({
     })
   }, [config.metric, config.title, config.yAxisLabel, metricNames, updateConfig])
 
-  // Compute a placeholder message for the chart preview area
   const chartPlaceholder = useMemo(() => {
     if (!project && !config.runId) return 'Select a project to get started.'
     if (!config.runId) return 'Choose a run to preview the chart.'
@@ -225,205 +451,68 @@ export function ChartBuilder({
     }
   }
 
+  async function handleConfirmDelete() {
+    setIsDeleting(true)
+    try {
+      await onDeleteChart(activeChartId)
+    } catch (err) {
+      setError(err.message || 'Failed to delete chart.')
+      setShowDeleteConfirm(false)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   const saveLabel = mode === 'panel' || onAddPanel
     ? 'Add panel'
     : activeChartId ? 'Update chart' : 'Save chart'
 
   return (
-    <div className="chart-builder chart-builder-vertical">
-      <section className="builder-preview panel">
-        <header className="section-header">
-          <div>
-            <h2>
-              {!project
-                ? 'Select a project'
-                : !config.runId
-                  ? 'Choose a run'
-                  : !selectedMetric
-                    ? 'Choose a metric'
-                    : `${project.name} · preview`}
-            </h2>
-            <p>x: {config.xAxis} · y: {selectedMetric || 'none'}</p>
-          </div>
-        </header>
-        <PanelCard title="Preview">
-          <MetricChart option={preview.option} onReady={(chart) => { previewChartRef.current = chart }} placeholder={chartPlaceholder} />
-        </PanelCard>
-      </section>
-
-      <div className="builder-controls panel">
-        <div className="builder-controls-row">
-
-          <section className="builder-section builder-section-inline">
-            <h3>Data</h3>
-            <Field label="Name">
-              <input value={config.name} onChange={(event) => updateConfig({ name: event.target.value })} placeholder={selectedMetric ? `${selectedMetric} ${config.chartType}` : 'Chart name'} />
-            </Field>
-            {allProjects.length > 0 ? (
-              <Field label="Project">
-                <select value={project?.id || ''} onChange={(e) => e.target.value && onProjectChange?.(e.target.value)}>
-                  {!project ? <option value="" disabled>Choose project…</option> : null}
-                  {allProjects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </Field>
-            ) : null}
-            <Field label="Run">
-              <select value={config.runId} onChange={(event) => {
-                const nextRun = runs.find((run) => run.id === event.target.value)
-                updateConfig({ runId: event.target.value, metric: '', yAxis: '', color: runColorForRun(nextRun) })
-              }}>
-                {runs.map((run) => <option key={run.id} value={run.id}>{run.name}</option>)}
-              </select>
-            </Field>
-            <Field label="Y-Axis">
-              <select value={selectedMetric} onChange={(event) => updateConfig({ metric: event.target.value, yAxis: event.target.value })}>
-                <option value="">Choose metric</option>
-                {metricNames.map((metric) => <option key={metric} value={metric}>{metric}</option>)}
-              </select>
-            </Field>
-            <Field label="X-axis">
-              <select value={config.xAxis} onChange={(event) => updateConfig({ xAxis: event.target.value })}>
-                <option value="step">Step</option>
-                <option value="timestamp">Timestamp</option>
-              </select>
-            </Field>
-          </section>
-
-          <section className="builder-section builder-section-inline">
-            <h3>Chart</h3>
-            <Field label="Chart type">
-              <select value={config.chartType} onChange={(event) => updateConfig({ chartType: event.target.value, area: event.target.value === 'area' ? true : config.area })}>
-                <option value="line">Line</option>
-                <option value="scatter">Scatter</option>
-                <option value="bar">Bar</option>
-                <option value="area">Area</option>
-              </select>
-            </Field>
-            <Field label="Title">
-              <input value={config.title} onChange={(event) => updateConfig({ title: event.target.value })} />
-            </Field>
-            <Field label="Subtitle">
-              <input value={config.subtitle} onChange={(event) => updateConfig({ subtitle: event.target.value })} />
-            </Field>
-            <Field label="X-axis label">
-              <input value={config.xAxisLabel} onChange={(event) => updateConfig({ xAxisLabel: event.target.value })} />
-            </Field>
-            <Field label="Y-axis label">
-              <input value={config.yAxisLabel} onChange={(event) => updateConfig({ yAxisLabel: event.target.value })} />
-            </Field>
-            <div className="toggle-grid">
-              <label>
-                <input checked={config.showXAxisLabel} onChange={(event) => updateConfig({ showXAxisLabel: event.target.checked })} type="checkbox" />
-                X label
-              </label>
-              <label>
-                <input checked={config.showYAxisLabel} onChange={(event) => updateConfig({ showYAxisLabel: event.target.checked })} type="checkbox" />
-                Y label
-              </label>
-              <label>
-                <input checked={config.showLegend} onChange={(event) => updateConfig({ showLegend: event.target.checked })} type="checkbox" />
-                Legend
-              </label>
-              <label>
-                <input checked={config.showTooltip} onChange={(event) => updateConfig({ showTooltip: event.target.checked })} type="checkbox" />
-                Tooltip
-              </label>
-            </div>
-          </section>
-
-          <section className="builder-section builder-section-inline">
-            <h3>Style</h3>
-            <div className="builder-field-row">
-              <Field label="Color">
-                <input value={config.color} onChange={(event) => updateConfig({ color: event.target.value })} type="color" />
-              </Field>
-              <Field label="Background">
-                <input value={config.backgroundColor} onChange={(event) => updateConfig({ backgroundColor: event.target.value })} type="color" />
-              </Field>
-            </div>
-            <div className="builder-field-row">
-              <Field label="Font size">
-                <input min="9" max="24" value={config.fontSize} onChange={(event) => updateConfig({ fontSize: event.target.value })} type="number" />
-              </Field>
-              <Field label="Line width">
-                <input min="1" max="10" value={config.lineWidth} onChange={(event) => updateConfig({ lineWidth: event.target.value })} type="number" />
-              </Field>
-            </div>
-            <div className="builder-field-row">
-              <Field label="Point size">
-                <input min="1" max="20" value={config.pointSize} onChange={(event) => updateConfig({ pointSize: event.target.value })} type="number" />
-              </Field>
-              <Field label="Bar width">
-                <input min="4" max="80" value={config.barWidth} onChange={(event) => updateConfig({ barWidth: event.target.value })} type="number" />
-              </Field>
-            </div>
-            <div className="toggle-grid">
-              <label>
-                <input checked={config.smooth} onChange={(event) => updateConfig({ smooth: event.target.checked })} type="checkbox" />
-                Smooth
-              </label>
-              <label>
-                <input checked={config.area} onChange={(event) => updateConfig({ area: event.target.checked })} type="checkbox" />
-                Area
-              </label>
-            </div>
-          </section>
-
-          <section className="builder-section builder-section-inline">
-            <h3>Advanced</h3>
-            <div className="grid-inputs">
-              {['left', 'right', 'top', 'bottom'].map((side) => (
-                <Field key={side} label={side}>
-                  <input
-                    min="0"
-                    value={config.grid[side]}
-                    onChange={(event) => updateConfig({ grid: { ...config.grid, [side]: event.target.value } })}
-                    type="number"
-                  />
-                </Field>
-              ))}
-            </div>
-            <Field label="ECharts JSON override">
-              <textarea value={config.echartsOptionOverride} onChange={(event) => updateConfig({ echartsOptionOverride: event.target.value })} rows={4} />
-            </Field>
-          </section>
-
-        </div>
-
-        {error ? <p className="form-error">{error}</p> : null}
-
-        <div className="builder-actions-row">
-          <div className="button-row">
-            <Button disabled={!preview.option} onClick={() => handleExport('png')} variant="secondary">Export PNG</Button>
-            <Button disabled={!preview.option} onClick={() => handleExport('svg')} variant="secondary">Export SVG</Button>
-            <Button disabled={isSaving || (!onSaveChart && !onAddPanel)} onClick={handleSave}>{isSaving ? 'Saving...' : saveLabel}</Button>
-            {activeChartId && onDeleteChart ? (
-              <Button onClick={() => setShowDeleteConfirm(true)} variant="secondary">Delete chart</Button>
-            ) : null}
-          </div>
-        </div>
-        {showDeleteConfirm ? (
-          <ConfirmDialog
-            title={`Delete "${config.name || config.title || 'this chart'}"?`}
-            message="This will permanently remove the saved chart configuration. This action cannot be undone."
-            confirmLabel={isDeleting ? 'Deleting...' : 'Delete'}
-            cancelLabel="Cancel"
+    <ChartBuilderShell>
+      <ChartPreviewPanel
+        chartPlaceholder={chartPlaceholder}
+        config={config}
+        onChartReady={(chart) => { previewChartRef.current = chart }}
+        preview={preview}
+        project={project}
+        selectedMetric={selectedMetric}
+      />
+      <ChartBuilderControls
+        error={error}
+        footer={(
+          <ChartBuilderActions
+            activeChartId={activeChartId}
+            canSave={Boolean(preview.option)}
+            isSaving={isSaving}
+            onDelete={activeChartId && onDeleteChart ? () => setShowDeleteConfirm(true) : null}
+            onExport={handleExport}
+            onSave={onSaveChart || onAddPanel ? handleSave : null}
+            saveLabel={saveLabel}
+          />
+        )}
+        deleteConfirm={showDeleteConfirm ? (
+          <DeleteChartConfirm
+            config={config}
+            isDeleting={isDeleting}
             onCancel={() => setShowDeleteConfirm(false)}
-            onConfirm={async () => {
-              setIsDeleting(true)
-              try {
-                await onDeleteChart(activeChartId)
-              } catch (err) {
-                setError(err.message || 'Failed to delete chart.')
-                setShowDeleteConfirm(false)
-              } finally {
-                setIsDeleting(false)
-              }
-            }}
+            onConfirm={handleConfirmDelete}
           />
         ) : null}
-      </div>
-    </div>
+      >
+        <ChartDataControls
+          allProjects={allProjects}
+          config={config}
+          metricNames={metricNames}
+          onChange={updateConfig}
+          onProjectChange={onProjectChange}
+          project={project}
+          runs={runs}
+          selectedMetric={selectedMetric}
+        />
+        <ChartDisplayControls config={config} onChange={updateConfig} />
+        <ChartStyleControls config={config} onChange={updateConfig} />
+        <ChartAdvancedControls config={config} onChange={updateConfig} />
+      </ChartBuilderControls>
+    </ChartBuilderShell>
   )
 }

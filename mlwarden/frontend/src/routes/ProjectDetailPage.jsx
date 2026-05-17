@@ -8,22 +8,18 @@ import { getProject } from '@/api/projects.js'
 import { listRunComparisons } from '@/api/runComparisons.js'
 import { deleteRun, listRuns } from '@/api/runs.js'
 import { useNotifications } from '@/app/useNotifications.js'
-import { Button } from '@/components/common/Button.jsx'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog.jsx'
 import { ErrorState } from '@/components/common/ErrorState.jsx'
 import { LoadingState } from '@/components/common/LoadingState.jsx'
 import { MetricCard } from '@/components/common/MetricCard.jsx'
 import { PageHeader } from '@/components/common/PageHeader.jsx'
-import { SearchInput } from '@/components/common/SearchInput.jsx'
-import { Toolbar } from '@/components/common/Toolbar.jsx'
 import { AppLayout } from '@/components/layout/AppLayout.jsx'
-import { RunTable } from '@/components/runs/RunTable.jsx'
+import { ProjectRunsWorkspace } from '@/components/projects/ProjectRunsWorkspace.jsx'
 import { RunComparisonWorkspace } from '@/components/runs/RunComparisonWorkspace.jsx'
 import { MetricChart } from '@/components/charts/MetricChart.jsx'
 import { PanelCard } from '@/components/charts/PanelCard.jsx'
 import { buildChartOption, normalizeChartConfig } from '@/components/charts/chartOptions.js'
 
-const statusOptions = ['created', 'running', 'finished', 'failed', 'cancelled']
 const runPalette = ['#2563eb', '#16a34a', '#ef4444', '#7c3aed', '#db2777', '#a16207', '#84cc16', '#0891b2', '#f59e0b', '#06b6d4']
 const refreshEvents = new Set([
   'backend.connected',
@@ -53,23 +49,6 @@ function ProjectMetricSummary({ stats }) {
       <MetricCard label="Finished" value={stats.finished} detail="completed" />
       <MetricCard label="Failed" value={stats.failed} detail="needs review" />
     </div>
-  )
-}
-
-function ProjectRunFilters({
-  query,
-  status,
-  onQueryChange,
-  onStatusChange,
-}) {
-  return (
-    <Toolbar>
-      <SearchInput value={query} onChange={onQueryChange} placeholder="Search run names" />
-      <select value={status} onChange={(event) => onStatusChange(event.target.value)}>
-        <option value="all">All statuses</option>
-        {statusOptions.map((option) => <option key={option} value={option}>{option}</option>)}
-      </select>
-    </Toolbar>
   )
 }
 
@@ -325,30 +304,19 @@ export default function ProjectDetailPage() {
         />
       ) : (
         <>
-          <ProjectRunFilters
-            query={query}
-            status={status}
-            onQueryChange={setQuery}
-            onStatusChange={setStatus}
-          />
-          <div className="comparison-action-bar panel">
-            <div>
-              <strong>{selectedRunIds.length} selected</strong>
-              <p>Select two or more metric-bearing runs to create a combined comparison workspace.</p>
-            </div>
-            <div className="button-row">
-              <Button disabled={selectedRunIds.length < 2} onClick={() => setIsComparisonActive(true)}>Combine Runs</Button>
-              <Button disabled={!selectedRunIds.length} onClick={handleResetComparison} variant="secondary">Reset selection</Button>
-            </div>
-          </div>
-          <RunTable
+          <ProjectRunsWorkspace
             disabledRunIds={disabledRunIds}
             onDeleteRun={(run) => setDeleteRunTarget(run)}
-            onRunSelect={handleRunSelect}
+            query={query}
             runColorMap={runColorMap}
             runs={filteredRuns}
-            selectable
             selectedRunIds={selectedRunIds}
+            onQueryChange={setQuery}
+            onResetComparison={handleResetComparison}
+            onRunSelect={handleRunSelect}
+            onStartComparison={() => setIsComparisonActive(true)}
+            onStatusChange={setStatus}
+            status={status}
           />
           <SavedChartsSection
             onDeleteChart={(chart) => setDeleteChartTarget(chart)}

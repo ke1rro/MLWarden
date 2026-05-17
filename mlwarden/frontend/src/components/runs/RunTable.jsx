@@ -4,67 +4,114 @@ import { ActionMenu } from '@/components/common/ActionMenu.jsx'
 import { EmptyState } from '@/components/common/EmptyState.jsx'
 import { StatusBadge } from '@/components/common/StatusBadge.jsx'
 
+function RunSelectionCell({ index, isDisabled, isSelected, onSelect, run }) {
+  if (!onSelect) return null
+  return (
+    <td className="run-select-cell">
+      <input
+        checked={isSelected}
+        disabled={isDisabled}
+        onChange={() => {}}
+        onClick={(event) => onSelect(run, event, index)}
+        type="checkbox"
+      />
+    </td>
+  )
+}
+
+function RunNameCell({ run, runColorMap }) {
+  return (
+    <td>
+      <Link className="table-link" to={`/runs/${run.id}`}>
+        {runColorMap[run.id] ? <span className="run-color-dot" style={{ background: runColorMap[run.id] }} /> : null}
+        {run.name}
+      </Link>
+    </td>
+  )
+}
+
+function RunProjectCell({ run }) {
+  if (!run.projectName) return null
+  return (
+    <td>
+      {run.projectId ? <Link className="table-link" to={`/projects/${run.projectId}`}>{run.projectName}</Link> : run.projectName}
+    </td>
+  )
+}
+
+function RunTagsCell({ tags }) {
+  return (
+    <td>
+      <div className="tag-row">
+        {tags.map((tag) => (
+          <span className="tag" key={tag}>{tag}</span>
+        ))}
+      </div>
+    </td>
+  )
+}
+
+function RunRowActions({ navigate, onDeleteRun, run }) {
+  return (
+    <td>
+      <ActionMenu items={[
+        { label: 'View run', icon: ExternalLink, onSelect: () => navigate(`/runs/${run.id}`) },
+        ...(onDeleteRun ? [{ label: 'Delete run', icon: Trash2, onSelect: () => onDeleteRun(run) }] : []),
+      ]} />
+    </td>
+  )
+}
+
+function RunTableRow({
+  index,
+  isDisabled,
+  isSelected,
+  navigate,
+  onDeleteRun,
+  onSelect,
+  run,
+  runColorMap,
+  showActions,
+  showProject,
+}) {
+  return (
+    <tr className={`${isSelected ? 'is-selected' : ''} ${isDisabled ? 'is-disabled' : ''}`} data-search-text={`${run.name} ${run.projectName || ''} ${run.status} ${run.tags.join(' ')}`} key={run.id}>
+      <RunSelectionCell
+        index={index}
+        isDisabled={isDisabled}
+        isSelected={isSelected}
+        onSelect={onSelect}
+        run={run}
+      />
+      <td><StatusBadge status={run.status} /></td>
+      <RunNameCell run={run} runColorMap={runColorMap} />
+      {showProject ? <RunProjectCell run={run} /> : null}
+      <td>{run.created}</td>
+      <td>{run.duration}</td>
+      <td>{run.bestPsnr ?? run.finalLoss ?? 'n/a'}</td>
+      <td>{run.finalLoss ?? 'n/a'}</td>
+      <RunTagsCell tags={run.tags} />
+      <td>{run.worker}</td>
+      {showActions ? <RunRowActions navigate={navigate} onDeleteRun={onDeleteRun} run={run} /> : null}
+    </tr>
+  )
+}
+
 export function RunTable({
   runs,
   onDeleteRun,
-  selectable = false,
-  selectedRunIds = [],
-  disabledRunIds = [],
+  selection = null,
   runColorMap = {},
-  onRunSelect,
-  compact = false,
   showActions = true,
 }) {
   const navigate = useNavigate()
   const showProject = runs.some((run) => run.projectName)
-  const selectedSet = new Set(selectedRunIds)
-  const disabledSet = new Set(disabledRunIds)
-  const renderCheckbox = (run, index, isSelected, isDisabled) => (
-    <input
-      checked={isSelected}
-      disabled={isDisabled}
-      onChange={() => {}}
-      onClick={(event) => onRunSelect?.(run, event, index)}
-      type="checkbox"
-    />
-  )
+  const selectedSet = new Set(selection?.selectedRunIds || [])
+  const disabledSet = new Set(selection?.disabledRunIds || [])
+  const onSelect = selection?.onSelect
 
   if (!runs.length) {
     return <EmptyState title="No runs match these filters." message="Adjust the filters or start a worker run." />
-  }
-
-  if (compact) {
-    return (
-      <div className="table-shell compact-runs">
-        <table className="data-table">
-          <thead>
-            <tr>
-              {selectable ? <th className="run-select-heading">Select</th> : null}
-              <th>Run</th>
-              <th>Metric</th>
-            </tr>
-          </thead>
-          <tbody>
-            {runs.map((run, index) => {
-              const isSelected = selectedSet.has(run.id)
-              const isDisabled = disabledSet.has(run.id)
-              return (
-                <tr className={`${isSelected ? 'is-selected' : ''} ${isDisabled ? 'is-disabled' : ''}`} data-search-text={`${run.name} ${run.status} ${run.tags.join(' ')}`} key={run.id}>
-                  {selectable ? <td className="run-select-cell">{renderCheckbox(run, index, isSelected, isDisabled)}</td> : null}
-                  <td>
-                    <Link className="table-link run-name-link" to={`/runs/${run.id}`}>
-                      {runColorMap[run.id] ? <span className="run-color-dot" style={{ background: runColorMap[run.id] }} /> : null}
-                      {run.name}
-                    </Link>
-                  </td>
-                  <td>{run.bestPsnr ?? run.finalLoss ?? 'n/a'}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-    )
   }
 
   return (
@@ -72,7 +119,7 @@ export function RunTable({
       <table className="data-table">
         <thead>
           <tr>
-            {selectable ? <th className="run-select-heading">Select</th> : null}
+            {onSelect ? <th className="run-select-heading">Select</th> : null}
             <th>Status</th>
             <th>Run name</th>
             {showProject ? <th>Project</th> : null}
@@ -90,45 +137,19 @@ export function RunTable({
             const isSelected = selectedSet.has(run.id)
             const isDisabled = disabledSet.has(run.id)
             return (
-              <tr className={`${isSelected ? 'is-selected' : ''} ${isDisabled ? 'is-disabled' : ''}`} data-search-text={`${run.name} ${run.projectName || ''} ${run.status} ${run.tags.join(' ')}`} key={run.id}>
-                {selectable ? (
-                  <td className="run-select-cell">
-                    {renderCheckbox(run, index, isSelected, isDisabled)}
-                  </td>
-                ) : null}
-                <td><StatusBadge status={run.status} /></td>
-                <td>
-                  <Link className="table-link" to={`/runs/${run.id}`}>
-                    {runColorMap[run.id] ? <span className="run-color-dot" style={{ background: runColorMap[run.id] }} /> : null}
-                    {run.name}
-                  </Link>
-                </td>
-                {showProject ? (
-                  <td>
-                    {run.projectId ? <Link className="table-link" to={`/projects/${run.projectId}`}>{run.projectName}</Link> : run.projectName}
-                  </td>
-                ) : null}
-                <td>{run.created}</td>
-                <td>{run.duration}</td>
-                <td>{run.bestPsnr ?? run.finalLoss ?? 'n/a'}</td>
-                <td>{run.finalLoss ?? 'n/a'}</td>
-                <td>
-                  <div className="tag-row">
-                    {run.tags.map((tag) => (
-                      <span className="tag" key={tag}>{tag}</span>
-                    ))}
-                  </div>
-                </td>
-                <td>{run.worker}</td>
-                {showActions ? (
-                  <td>
-                    <ActionMenu items={[
-                      { label: 'View run', icon: ExternalLink, onSelect: () => navigate(`/runs/${run.id}`) },
-                      ...(onDeleteRun ? [{ label: 'Delete run', icon: Trash2, onSelect: () => onDeleteRun(run) }] : []),
-                    ]} />
-                  </td>
-                ) : null}
-              </tr>
+              <RunTableRow
+                index={index}
+                isDisabled={isDisabled}
+                isSelected={isSelected}
+                key={run.id}
+                navigate={navigate}
+                onDeleteRun={onDeleteRun}
+                onSelect={onSelect}
+                run={run}
+                runColorMap={runColorMap}
+                showActions={showActions}
+                showProject={showProject}
+              />
             )
           })}
         </tbody>

@@ -77,6 +77,12 @@ function getFilename(response) {
   return match?.[1] || null
 }
 
+function dispatchUnauthorized() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('mlwarden:unauthorized'))
+  }
+}
+
 async function parseError(response) {
   try {
     const data = await response.json()
@@ -94,83 +100,109 @@ async function parseError(response) {
   }
 }
 
-export async function apiRequest(path, options = {}) {
-  const { body, formData, headers = {}, method = body || formData ? 'POST' : 'GET' } = options
-  const requestHeaders = new Headers(headers)
-  const token = getAccessToken()
-
-  if (token) {
-    requestHeaders.set('Authorization', `Bearer ${token}`)
+export class ApiClient {
+  constructor({ baseUrl = API_BASE_URL, tokenProvider = getAccessToken, onUnauthorized = dispatchUnauthorized } = {}) {
+    this.baseUrl = baseUrl.replace(/\/$/, '')
+    this.tokenProvider = tokenProvider
+    this.onUnauthorized = onUnauthorized
   }
 
-  let requestBody
-  if (formData) {
-    requestBody = formData
-  } else if (body !== undefined) {
-    requestHeaders.set('Content-Type', 'application/json')
-    requestBody = JSON.stringify(body)
-  }
+  async request(path, options = {}) {
+    const { body, formData, headers = {}, method = body || formData ? 'POST' : 'GET' } = options
+    const requestHeaders = new Headers(headers)
+    const token = this.tokenProvider?.()
 
-  let response
-  try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
-      method,
-      headers: requestHeaders,
-      body: requestBody,
-    })
-  } catch (error) {
-    throw new ApiClientError(`Cannot reach MLWarden API at ${API_BASE_URL}. Start the backend server and retry.`, {
-      code: 'network_error',
-      details: { cause: error.message || 'Network request failed' },
-    })
-  }
-
-  if (!response.ok) {
-    const error = await parseError(response)
-    if (response.status === 401) {
-      window.dispatchEvent(new CustomEvent('mlwarden:unauthorized'))
+    if (token) {
+      requestHeaders.set('Authorization', `Bearer ${token}`)
     }
-    throw error
-  }
 
-  if (response.status === 204) return null
-  const contentType = response.headers.get('content-type') || ''
-  return contentType.includes('application/json') ? response.json() : response.text()
-}
-
-export async function downloadBlob(path) {
-  const token = getAccessToken()
-  const headers = new Headers()
-  if (token) headers.set('Authorization', `Bearer ${token}`)
-
-  const response = await fetch(`${API_BASE_URL}${path}`, { headers })
-  if (!response.ok) {
-    const error = await parseError(response)
-    if (response.status === 401) {
-      window.dispatchEvent(new CustomEvent('mlwarden:unauthorized'))
+    let requestBody
+    if (formData) {
+      requestBody = formData
+    } else if (body !== undefined) {
+      requestHeaders.set('Content-Type', 'application/json')
+      requestBody = JSON.stringify(body)
     }
-    throw error
+
+    let response
+    try {
+      response = await fetch(`${this.baseUrl}${path}`, {
+        method,
+        headers: requestHeaders,
+        body: requestBody,
+      })
+    } catch (error) {
+      throw new ApiClientError(`Cannot reach MLWarden API at ${this.baseUrl}. Start the backend server and retry.`, {
+        code: 'network_error',
+        details: { cause: error.message || 'Network request failed' },
+      })
+    }
+
+    if (!response.ok) {
+      const error = await parseError(response)
+      if (response.status === 401) {
+        this.onUnauthorized?.()
+      }
+      throw error
+    }
+
+    if (response.status === 204) return null
+    const contentType = response.headers.get('content-type') || ''
+    return contentType.includes('application/json') ? response.json() : response.text()
   }
 
-  return {
-    blob: await response.blob(),
-    filename: getFilename(response),
+  async downloadBlob(path) {
+    const token = this.tokenProvider?.()
+    const headers = new Headers()
+    if (token) headers.set('Authorization', `Bearer ${token}`)
+
+    const response = await fetch(`${this.baseUrl}${path}`, { headers })
+    if (!response.ok) {
+      const error = await parseError(response)
+      if (response.status === 401) {
+        this.onUnauthorized?.()
+      }
+      throw error
+    }
+
+    return {
+      blob: await response.blob(),
+      filename: getFilename(response),
+    }
+  }
+
+  async downloadToFile(path, fallbackName) {
+    const { blob, filename } = await this.downloadBlob(path)
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename || fallbackName || 'download'
+    document.body.append(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  async fileObjectUrl(path) {
+    const { blob } = await this.downloadBlob(path)
+    return URL.createObjectURL(blob)
   }
 }
 
-export async function downloadToFile(path, fallbackName) {
-  const { blob, filename } = await downloadBlob(path)
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename || fallbackName || 'download'
-  document.body.append(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(url)
+export const apiClient = new ApiClient()
+
+export function apiRequest(path, options = {}) {
+  return apiClient.request(path, options)
 }
 
-export async function fileObjectUrl(path) {
-  const { blob } = await downloadBlob(path)
-  return URL.createObjectURL(blob)
+export function downloadBlob(path) {
+  return apiClient.downloadBlob(path)
+}
+
+export function downloadToFile(path, fallbackName) {
+  return apiClient.downloadToFile(path, fallbackName)
+}
+
+export function fileObjectUrl(path) {
+  return apiClient.fileObjectUrl(path)
 }
