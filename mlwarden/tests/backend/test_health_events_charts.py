@@ -1,5 +1,7 @@
 from typing import Any, Callable
 
+from backend.database import insert_system_metric_sample
+from backend.routes import system
 from conftest import (
     assert_error_response,
     assert_status,
@@ -23,6 +25,46 @@ def test_health_and_version_endpoints(client: TestClient) -> None:
     assert_status(version_response, 200)
     version = response_body(version_response)
     assert isinstance(version.get("version"), str) and version["version"]
+
+
+def test_system_metrics_history_endpoint_supports_incremental_samples(
+    client: TestClient,
+    auth_headers: dict[str, str],
+) -> None:
+    first_sample = {
+        "timestamp": "2099-01-01T00:00:01Z",
+        "gpu_temp": None,
+        "gpu_usage": None,
+        "cpu_temp": 48.0,
+        "cpu_usage": 12.5,
+        "memory_usage": 51.0,
+        "disk_usage": 71.0,
+        "gpu_detail": "No NVIDIA GPU detected",
+        "cpu_temp_detail": "coretemp",
+        "cpu_usage_detail": "host CPU",
+        "memory_detail": "8.0 / 16.0 GB",
+        "disk_detail": "71.0 / 100.0 GB",
+        "created_at": "2099-01-01T00:00:01Z",
+    }
+    second_sample = {**first_sample, "timestamp": "2099-01-01T00:00:06Z", "cpu_usage": 18.0}
+
+    insert_system_metric_sample(first_sample)
+    insert_system_metric_sample(second_sample)
+    system.append_system_metric_cache(first_sample)
+    system.append_system_metric_cache(second_sample)
+
+    response = client.get(
+        "/api/system/metrics/history",
+        params={"since": first_sample["timestamp"], "limit": 10},
+        headers=auth_headers,
+    )
+
+    assert_status(response, 200)
+    samples = response_body(response)["samples"]
+    assert [sample["timestamp"] for sample in samples] == [second_sample["timestamp"]]
+    metrics = {metric["id"]: metric for metric in samples[0]["metrics"]}
+    assert metrics["cpu-usage"]["value"] == second_sample["cpu_usage"]
+    assert metrics["gpu-temp"]["available"] is False
 
 
 def test_recent_events_endpoint_returns_run_events(

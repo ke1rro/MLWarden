@@ -9,10 +9,10 @@ import { useWorkspaceOverview } from '@/hooks/useWorkspaceOverview.js'
 function WorkspaceSummaryCards({ summary }) {
   return (
     <div className="metric-grid">
-      <MetricCard label="Projects" value={summary.projects} detail="local workspaces" />
-      <MetricCard label="Runs" value={summary.runs} detail="tracked experiments" />
-      <MetricCard label="Running" value={summary.running} detail="active workers" />
-      <MetricCard label="Charts" value={summary.charts} detail="saved views" />
+      <MetricCard label="Projects" value={summary.projects} detail="project" />
+      <MetricCard label="Runs" value={summary.runs} detail="run" />
+      <MetricCard label="Running" value={summary.running} detail="active" />
+      <MetricCard label="Charts" value={summary.charts} detail="saved view" />
     </div>
   )
 }
@@ -64,10 +64,10 @@ function WorkspaceOverview({ snapshot, summary }) {
     <>
       <WorkspaceSummaryCards summary={summary} />
       <div className="workspace-overview-grid">
-        <WorkspaceListSection actionLabel="All projects" subtitle="Most recent local workspaces." title="Projects" to="/projects">
+        <WorkspaceListSection actionLabel="All projects" subtitle="Recent projects." title="Projects" to="/projects">
           {snapshot.projects.slice(0, 6).map((project) => <WorkspaceProjectLink key={project.id} project={project} />)}
         </WorkspaceListSection>
-        <WorkspaceListSection actionLabel="All runs" subtitle="Latest runs from all projects." title="Recent runs" to="/runs">
+        <WorkspaceListSection actionLabel="All runs" subtitle="Recent training runs." title="Recent runs" to="/runs">
           {snapshot.runs.slice(0, 6).map((run) => <WorkspaceRunLink key={run.id} run={run} />)}
         </WorkspaceListSection>
       </div>
@@ -81,7 +81,7 @@ export default function WorkspacePage() {
     <AppLayout
       breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Workspace' }]}
       title="Workspace"
-      subtitle="Overview of the local MLWarden instance across projects, runs, charts, and artifacts."
+      subtitle="Local runs, projects, charts, artifacts, and host metrics."
     >
       {workspace.isLoading ? <LoadingState message="Loading workspace..." /> : null}
       {workspace.error ? <ErrorState message={workspace.error} /> : null}

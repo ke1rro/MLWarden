@@ -12,7 +12,7 @@ export default function SystemPage() {
     <AppLayout
       breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'System' }]}
       title="System"
-      subtitle="Local training host telemetry for GPU, CPU, memory, and disk pressure."
+      subtitle="Host telemetry for CPU, GPU, memory, and disk usage."
     >
       {system.isLoading ? <LoadingState message="Loading system metrics..." /> : null}
       {system.error ? <ErrorState message={system.error} /> : null}

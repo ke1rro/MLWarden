@@ -30,7 +30,7 @@ function buildResults(snapshot, query) {
     .map((chart) => ({
       id: chart.id,
       title: chart.name,
-      detail: `${chart.projectName} · ${chart.chart_type || chart.type || 'chart'}`,
+      detail: `${chart.projectName} · ${chart.chart_type ? `${chart.chart_type} chart` : (chart.type ? `${chart.type} chart` : 'chart')}`,
       to: `/projects/${chart.projectId}/charts`,
     }))
 

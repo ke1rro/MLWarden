@@ -139,7 +139,7 @@ export function NotificationsProvider({ children }) {
           const message = {
             type: 'backend.connected',
             timestamp: new Date().toISOString(),
-            payload: { message: 'Backend connection restored.' },
+            payload: { message: 'Backend reconnected.' },
           }
           dispatch({ type: 'add', notification: eventToNotification(message) })
           publish(message)

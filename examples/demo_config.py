@@ -168,7 +168,7 @@ def make_tracker(config: DemoConfig):
 def ensure_project(tracker: Any, config: DemoConfig) -> dict[str, Any]:
     return tracker.get_or_create_project(
         config.project,
-        description="Real SDK-seeded PyTorch and TensorFlow demo project.",
+        description="Demo project with PyTorch and TensorFlow runs.",
     )
 
 

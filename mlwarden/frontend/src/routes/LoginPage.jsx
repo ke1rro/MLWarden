@@ -41,7 +41,7 @@ export default function LoginPage() {
       <form className="login-card" onSubmit={handleSubmit}>
         <div className="login-brand">
           <Logo />
-          <p>Self-hosted experiment and workflow tracking.</p>
+
         </div>
         <label>
           Username

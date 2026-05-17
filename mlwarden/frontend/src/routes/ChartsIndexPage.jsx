@@ -14,7 +14,7 @@ function NewChartCard() {
     <Link className="summary-card summary-card-new" to="/charts/new">
       <Plus size={18} />
       <strong>New chart</strong>
-      <span>Create a new chart</span>
+      <span>Visualize run metrics</span>
     </Link>
   )
 }
@@ -32,7 +32,7 @@ function ChartIndexCard({ chart, onDelete, onOpen }) {
       >
         <LineChart size={18} />
         <strong>{chart.name}</strong>
-        <span>{chart.projectName} · {chart.chart_type || chart.type || 'chart'}</span>
+        <span>{chart.projectName} · {chart.chart_type ? `${chart.chart_type} chart` : (chart.type ? `${chart.type} chart` : 'chart')}</span>
       </button>
       <div className="summary-card-menu">
         <ActionMenu items={[
@@ -76,7 +76,7 @@ export default function ChartsIndexPage() {
     <AppLayout
       breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Charts' }]}
       title="Charts"
-      subtitle="Saved chart configurations across all projects."
+      subtitle="Saved metric views."
     >
       <Toolbar>
         <SearchInput value={workspace.query} onChange={workspace.setQuery} placeholder="Search charts" />

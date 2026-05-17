@@ -69,8 +69,8 @@ export default function HomePage() {
       <section className="home-hero" id="workspace">
         <h1>Watch training as it happens.</h1>
         <p>
-          MLWarden gives local ML teams a focused workspace for metrics, media,
-          artifacts, logs, and system signals.
+          Monitor local ML runs in real time.<br />
+          Track metrics, logs, artifacts, and host telemetry from one local workspace.
         </p>
         <div className="home-actions">
           <Link className="home-button primary" to="/workspace">

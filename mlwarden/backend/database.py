@@ -343,6 +343,57 @@ def metric_summary_rows(run_id: str) -> list[dict[str, Any]]:
     return fetch_all("SELECT * FROM metric_summaries WHERE run_id = ? ORDER BY name", (run_id,))
 
 
+def insert_system_metric_sample(sample: dict[str, Any]) -> None:
+    execute(
+        """
+        INSERT OR IGNORE INTO system_metric_samples (
+            timestamp, gpu_temp, gpu_usage, cpu_temp, cpu_usage, memory_usage, disk_usage,
+            gpu_detail, cpu_temp_detail, cpu_usage_detail, memory_detail, disk_detail, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            sample["timestamp"],
+            sample["gpu_temp"],
+            sample["gpu_usage"],
+            sample["cpu_temp"],
+            sample["cpu_usage"],
+            sample["memory_usage"],
+            sample["disk_usage"],
+            sample["gpu_detail"],
+            sample["cpu_temp_detail"],
+            sample["cpu_usage_detail"],
+            sample["memory_detail"],
+            sample["disk_detail"],
+            sample["created_at"],
+        ),
+    )
+
+
+def system_metric_sample_rows(limit: int) -> list[dict[str, Any]]:
+    rows = fetch_all(
+        """
+        SELECT * FROM system_metric_samples
+        ORDER BY timestamp DESC
+        LIMIT ?
+        """,
+        (limit,),
+    )
+    return list(reversed(rows))
+
+
+def system_metric_sample_rows_since(timestamp: str, limit: int) -> list[dict[str, Any]]:
+    return fetch_all(
+        """
+        SELECT * FROM system_metric_samples
+        WHERE timestamp > ?
+        ORDER BY timestamp ASC
+        LIMIT ?
+        """,
+        (timestamp, limit),
+    )
+
+
 def insert_log(log: dict[str, Any]) -> None:
     execute(
         """

@@ -179,7 +179,7 @@ export function eventToNotification(event = {}) {
     'artifact.uploaded': 'Artifact uploaded',
     'image.uploaded': 'Image uploaded',
     'backend.disconnected': 'Backend connection lost',
-    'backend.connected': 'Backend connection restored',
+    'backend.connected': 'Backend reconnected',
   }
 
   return {

@@ -15,7 +15,7 @@ export default function RunsPage() {
     <AppLayout
       breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Runs' }]}
       title="Runs"
-      subtitle="All experiment runs across local projects."
+      subtitle="Training runs from all projects."
     >
       <Toolbar>
         <SearchInput value={workspace.query} onChange={workspace.setQuery} placeholder="Search runs" />

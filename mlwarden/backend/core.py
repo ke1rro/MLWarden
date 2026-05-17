@@ -178,6 +178,21 @@ def init_db() -> None:
     );
     CREATE INDEX IF NOT EXISTS idx_metrics_run_name_step ON metrics(run_id, name, step);
     CREATE INDEX IF NOT EXISTS idx_metrics_run_name_timestamp ON metrics(run_id, name, timestamp);
+    CREATE TABLE IF NOT EXISTS system_metric_samples (
+        timestamp TEXT PRIMARY KEY,
+        gpu_temp REAL,
+        gpu_usage REAL,
+        cpu_temp REAL,
+        cpu_usage REAL,
+        memory_usage REAL,
+        disk_usage REAL,
+        gpu_detail TEXT NOT NULL,
+        cpu_temp_detail TEXT NOT NULL,
+        cpu_usage_detail TEXT NOT NULL,
+        memory_detail TEXT NOT NULL,
+        disk_detail TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS metric_summaries (
         id TEXT PRIMARY KEY,
         run_id TEXT NOT NULL REFERENCES runs(id) ON DELETE CASCADE,

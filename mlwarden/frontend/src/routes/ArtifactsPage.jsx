@@ -15,14 +15,14 @@ export default function ArtifactsPage() {
     <AppLayout
       breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Artifacts' }]}
       title="Artifacts"
-      subtitle="All run artifacts across local projects."
+      subtitle="Files produced by training runs."
     >
       <Toolbar>
         <SearchInput value={workspace.query} onChange={workspace.setQuery} placeholder="Search artifacts" />
       </Toolbar>
       {workspace.isLoading ? <LoadingState message="Loading artifacts..." /> : null}
       {workspace.error ? <ErrorState message={workspace.error} /> : null}
-      {!workspace.isLoading && !workspace.error && !workspace.artifacts.length ? <EmptyState title="No artifacts uploaded." message="Upload artifacts from a worker run or the run artifact tab." /> : null}
+      {!workspace.isLoading && !workspace.error && !workspace.artifacts.length ? <EmptyState title="No artifacts yet." message="Artifacts will appear here after a run uploads files." /> : null}
       {!workspace.isLoading && !workspace.error && workspace.artifacts.length ? (
         <ArtifactTable
           artifacts={workspace.filteredArtifacts}

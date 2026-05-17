@@ -88,8 +88,8 @@ function RunTableRow({
       {showProject ? <RunProjectCell run={run} /> : null}
       <td>{run.created}</td>
       <td>{run.duration}</td>
-      <td>{run.bestPsnr ?? run.finalLoss ?? 'n/a'}</td>
-      <td>{run.finalLoss ?? 'n/a'}</td>
+      <td>{run.bestPsnr ?? run.finalLoss ?? '—'}</td>
+      <td>{run.finalLoss ?? '—'}</td>
       <RunTagsCell tags={run.tags} />
       <td>{run.worker}</td>
       {showActions ? <RunRowActions navigate={navigate} onDeleteRun={onDeleteRun} run={run} /> : null}

@@ -47,7 +47,7 @@ export function MetricChart({ config, series, option, renderer = 'svg', onReady,
   }
 
   if (!hasData) {
-    return <EmptyState title="No metrics logged yet." message="Start a worker run or log metrics through the Python client." />
+    return <EmptyState title="No data yet." message="Metrics will appear here once a worker starts logging." />
   }
 
   return <div className="metric-chart" ref={chartRef} />

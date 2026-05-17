@@ -75,7 +75,7 @@ export default function ProjectsPage() {
     <AppLayout
       breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Projects' }]}
       title="Projects"
-      subtitle="Track experiment runs, metrics, artifacts, and workflow outputs."
+      subtitle="Group runs by project."
     >
       <ProjectSummaryCards summary={workspace.summary} />
       <Toolbar>

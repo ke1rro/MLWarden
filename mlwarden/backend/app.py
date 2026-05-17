@@ -28,7 +28,11 @@ from .routes import (
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     settings.artifact_root.mkdir(parents=True, exist_ok=True)
     init_db()
-    yield
+    await system.start_system_telemetry_collector()
+    try:
+        yield
+    finally:
+        await system.stop_system_telemetry_collector()
 
 
 def create_app() -> FastAPI:
