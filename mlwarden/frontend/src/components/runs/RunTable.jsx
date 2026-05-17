@@ -12,7 +12,9 @@ export function RunTable({
   disabledRunIds = [],
   runColorMap = {},
   onRunSelect,
+  onRunAction,
   compact = false,
+  showActions = true,
 }) {
   const navigate = useNavigate()
   const showProject = runs.some((run) => run.projectName)
@@ -81,7 +83,7 @@ export function RunTable({
             <th>Final loss</th>
             <th>Tags</th>
             <th>Worker</th>
-            <th>Actions</th>
+            {showActions ? <th>Actions</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -119,12 +121,14 @@ export function RunTable({
                   </div>
                 </td>
                 <td>{run.worker}</td>
-                <td>
-                  <ActionMenu items={[
-                    { label: 'View run', icon: ExternalLink, onSelect: () => navigate(`/runs/${run.id}`) },
-                    ...(onDeleteRun ? [{ label: 'Delete run', icon: Trash2, onSelect: () => onDeleteRun(run) }] : []),
-                  ]} />
-                </td>
+                {showActions ? (
+                  <td>
+                    <ActionMenu items={[
+                      { label: 'View run', icon: ExternalLink, onSelect: () => navigate(`/runs/${run.id}`) },
+                      ...(onDeleteRun ? [{ label: 'Delete run', icon: Trash2, onSelect: () => onDeleteRun(run) }] : []),
+                    ]} />
+                  </td>
+                ) : null}
               </tr>
             )
           })}

@@ -5,7 +5,7 @@ const baseTextStyle = {
   fontWeight: 500,
 }
 
-const defaultGrid = { left: 56, right: 24, top: 58, bottom: 58 }
+const defaultGrid = { left: 56, right: 24, top: 58, bottom: 68 }
 
 
 
@@ -171,7 +171,7 @@ export function buildChartOption(inputConfig, seriesInput = []) {
     },
     dataZoom: [
       { type: 'inside', xAxisIndex: 0, filterMode: 'none', moveOnMouseMove: false, moveOnMouseWheel: false, zoomOnMouseWheel: true },
-      { type: 'slider', xAxisIndex: 0, filterMode: 'none', height: 18, bottom: 8 },
+      { type: 'slider', xAxisIndex: 0, filterMode: 'none', height: 16, bottom: 4 },
     ],
     grid: config.grid,
     toolbox: {
@@ -187,12 +187,12 @@ export function buildChartOption(inputConfig, seriesInput = []) {
     xAxis: {
       name: config.xAxisLabel,
       nameLocation: 'middle',
-      nameGap: 32,
+      nameGap: 38,
       type: xAxisType,
       data: xData,
       boundaryGap: seriesType === 'bar',
-      axisLabel: fontStyle,
-      nameTextStyle: fontStyle,
+      axisLabel: { ...fontStyle, margin: 8 },
+      nameTextStyle: { ...fontStyle, padding: [0, 0, 0, 0] },
       axisLine: { lineStyle: { color: '#d9dee7' } },
     },
     yAxis: {

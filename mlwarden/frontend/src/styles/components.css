@@ -142,6 +142,14 @@
   padding: 7px 10px;
 }
 
+.toolbar select,
+.builder-panel select,
+.builder-controls select,
+.settings-panel select,
+.settings-form-grid select {
+  padding-right: 28px;
+}
+
 .builder-panel input,
 .builder-panel select,
 .builder-panel textarea,

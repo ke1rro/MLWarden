@@ -61,7 +61,7 @@ function systemChartOption(metric, series, type) {
     pointSize: 4,
     smooth: true,
     area: areaMetrics.has(metric.id),
-    grid: { left: 64, right: 24, top: 66, bottom: 58 },
+    grid: { left: 64, right: 24, top: 66, bottom: 68 },
   }, series)
 }
 

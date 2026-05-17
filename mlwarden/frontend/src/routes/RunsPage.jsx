@@ -90,6 +90,7 @@ export default function RunsPage() {
         <RunTable
           runs={filteredRuns}
           onDeleteRun={(run) => setDeleteTarget(run)}
+          showActions={false}
         />
       ) : null}
       {deleteTarget ? (
