@@ -1,7 +1,6 @@
 from typing import Any, Callable
 
 from backend.database import insert_system_metric_sample
-from backend.routes import system
 from conftest import (
     assert_error_response,
     assert_status,
@@ -50,8 +49,6 @@ def test_system_metrics_history_endpoint_supports_incremental_samples(
 
     insert_system_metric_sample(first_sample)
     insert_system_metric_sample(second_sample)
-    system.append_system_metric_cache(first_sample)
-    system.append_system_metric_cache(second_sample)
 
     response = client.get(
         "/api/system/metrics/history",
