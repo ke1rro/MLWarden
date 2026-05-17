@@ -97,19 +97,6 @@ export function useRunWorkspace(runId) {
     }
   }), [reload, runId, subscribe])
 
-  const runAction = useCallback(async (action) => {
-    setError(null)
-    try {
-      if (action === 'start') await runsApi.start(runId)
-      if (action === 'finish') await runsApi.finish(runId)
-      if (action === 'fail') await runsApi.fail(runId, { error_message: 'Marked failed from UI' })
-      if (action === 'cancel') await runsApi.cancel(runId)
-      await reload()
-    } catch (err) {
-      setError(err)
-    }
-  }, [reload, runId])
-
   const loadTableRows = useCallback(async (tableName, params) => {
     const response = await tablesApi.get(runId, tableName, params)
     return {
@@ -139,7 +126,6 @@ export function useRunWorkspace(runId) {
     error,
     isLoading,
     reload,
-    runAction,
     loadTableRows,
     uploadRunImage,
     uploadRunArtifact,

@@ -41,7 +41,6 @@ export default function RunDetailPage() {
     metricSummaries,
     project,
     run,
-    runAction,
     tables,
     uploadRunArtifact,
     uploadRunImage,
@@ -81,8 +80,8 @@ export default function RunDetailPage() {
 
   return (
     <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: project.name, to: `/projects/${project.id}` }, { label: run.name }]}>
-      <RunHeader onRunAction={runAction} project={project} run={run} />
-      {error ? <ErrorState message={error.message || 'Run action failed.'} /> : null}
+      <RunHeader project={project} run={run} />
+      {error ? <ErrorState message={error.message || 'Failed to load run.'} /> : null}
       <Tabs tabs={tabs} activeTab={activeTab} onChange={(tab) => setSearchParams(tab === 'charts' ? {} : { tab })} />
       {renderTab()}
     </AppLayout>

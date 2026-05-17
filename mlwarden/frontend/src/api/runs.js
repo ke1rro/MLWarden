@@ -21,22 +21,6 @@ export class RunsApi {
     return this.client.request(`/api/runs/${runId}`, { method: 'PATCH', body })
   }
 
-  start(runId) {
-    return this.client.request(`/api/runs/${runId}/start`, { method: 'POST' })
-  }
-
-  finish(runId, summary = {}) {
-    return this.client.request(`/api/runs/${runId}/finish`, { method: 'POST', body: { summary } })
-  }
-
-  fail(runId, body = {}) {
-    return this.client.request(`/api/runs/${runId}/fail`, { method: 'POST', body })
-  }
-
-  cancel(runId) {
-    return this.client.request(`/api/runs/${runId}/cancel`, { method: 'POST' })
-  }
-
   delete(runId) {
     return this.client.request(`/api/runs/${runId}`, { method: 'DELETE' })
   }
@@ -58,22 +42,6 @@ export function getRun(runId) {
 
 export function updateRun(runId, body) {
   return runsApi.update(runId, body)
-}
-
-export function startRun(runId) {
-  return runsApi.start(runId)
-}
-
-export function finishRun(runId, summary = {}) {
-  return runsApi.finish(runId, summary)
-}
-
-export function failRun(runId, body = {}) {
-  return runsApi.fail(runId, body)
-}
-
-export function cancelRun(runId) {
-  return runsApi.cancel(runId)
 }
 
 export function deleteRun(runId) {
