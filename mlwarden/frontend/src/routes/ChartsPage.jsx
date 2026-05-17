@@ -25,9 +25,9 @@ export default function ChartsPage() {
   const [error, setError] = useState('')
   const { subscribe } = useNotifications()
 
-  const loadWorkspace = useCallback(async (pid) => {
+  const loadWorkspace = useCallback(async (pid, { silent = false } = {}) => {
     if (!pid) return
-    setIsLoading(true)
+    if (!silent) setIsLoading(true)
     setError('')
     try {
       const [projectRes, runsRes, chartsRes] = await Promise.all([
@@ -41,7 +41,7 @@ export default function ChartsPage() {
     } catch (err) {
       setError(err.message || 'Failed to load workspace.')
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }, [])
 
@@ -66,15 +66,18 @@ export default function ChartsPage() {
   async function handleSaveChart(body, chartId) {
     if (chartId) {
       await updateChart(chartId, body)
+      await loadWorkspace(projectId, { silent: true })
     } else {
-      await createChart(projectId, body)
+      const newChart = await createChart(projectId, body)
+      navigate(`/projects/${projectId}/charts?chart=${newChart.id}`, { replace: true })
+      await loadWorkspace(projectId, { silent: true })
     }
-    await loadWorkspace(projectId)
   }
 
   async function handleDeleteChart(chartId) {
     await deleteChart(chartId)
-    await loadWorkspace(projectId)
+    navigate('/charts', { replace: true })
+    await loadWorkspace(projectId, { silent: true })
   }
 
   const initialChart = initialChartId ? savedCharts.find((c) => c.id === initialChartId) : null

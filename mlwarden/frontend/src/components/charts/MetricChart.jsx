@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react'
 import * as echarts from 'echarts'
 import { EmptyState } from '@/components/common/EmptyState.jsx'
-import { ErrorState } from '@/components/common/ErrorState.jsx'
 import { buildChartOption, optionHasSeriesData } from './chartOptions.js'
 
-export function MetricChart({ title, series, type = 'line', area = false, option, renderer = 'svg', onReady }) {
+export function MetricChart({ title, series, type = 'line', area = false, option, renderer = 'svg', onReady, placeholder }) {
   const chartRef = useRef(null)
   const chartInstanceRef = useRef(null)
   const onReadyRef = useRef(onReady)
@@ -50,7 +49,7 @@ export function MetricChart({ title, series, type = 'line', area = false, option
   }, [resolvedOption])
 
   if (!resolvedOption) {
-    return <ErrorState title="Invalid chart config" message="No metric series was found for this panel." />
+    return <EmptyState title={placeholder || 'Waiting for data…'} message="" />
   }
 
   if (!hasData) {

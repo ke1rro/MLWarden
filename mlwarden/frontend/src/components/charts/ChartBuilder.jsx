@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getMetricSummary, getMetrics } from '@/api/metrics.js'
 import { listProjects } from '@/api/projects.js'
 import { Button } from '@/components/common/Button.jsx'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog.jsx'
 import { MetricChart } from './MetricChart.jsx'
 import { PanelCard } from './PanelCard.jsx'
 import { buildChartOption, normalizeChartConfig, parseEchartsOverride } from './chartOptions.js'
@@ -79,6 +80,8 @@ export function ChartBuilder({
   const [error, setError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isLoadingMetrics, setIsLoadingMetrics] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const previewChartRef = useRef(null)
 
   const activeChartId = initialChart?.id
@@ -104,14 +107,17 @@ export function ChartBuilder({
   useEffect(() => {
     if (!config.runId) {
       setMetricSeries({})
+      setIsLoadingMetrics(false)
       return undefined
     }
     if (initialMetricSeries && runs[0]?.id === config.runId) {
       setMetricSeries(initialMetricSeries)
+      setIsLoadingMetrics(false)
       return undefined
     }
     let cancelled = false
     async function loadRunMetrics() {
+      setIsLoadingMetrics(true)
       setError('')
       try {
         const summary = await getMetricSummary(config.runId)
@@ -120,6 +126,8 @@ export function ChartBuilder({
         if (!cancelled) setMetricSeries(response.series || {})
       } catch (err) {
         if (!cancelled) setError(err.message || 'Failed to load metrics.')
+      } finally {
+        if (!cancelled) setIsLoadingMetrics(false)
       }
     }
     loadRunMetrics()
@@ -137,12 +145,22 @@ export function ChartBuilder({
     })
   }, [config.metric, config.title, config.yAxisLabel, metricNames, updateConfig])
 
-  const buildPreview = useCallback((showError = false) => {
-    try {
-      if (!config.runId) throw new Error('Choose a run before previewing the chart.')
-      if (!selectedMetric) throw new Error('Choose a metric before previewing the chart.')
-      if (!selectedSeries.length) throw new Error(`No metric series was found for "${selectedMetric}".`)
+  // Compute a placeholder message for the chart preview area
+  const chartPlaceholder = useMemo(() => {
+    if (!project && !config.runId) return 'Select a project to get started.'
+    if (!config.runId) return 'Choose a run to preview the chart.'
+    if (isLoadingMetrics) return 'Loading metrics…'
+    if (!selectedMetric) return 'Choose a metric for the Y-axis.'
+    if (!selectedSeries.length) return `No data found for metric "${selectedMetric}".`
+    return ''
+  }, [config.runId, isLoadingMetrics, project, selectedMetric, selectedSeries])
 
+  const buildPreview = useCallback((showError = false) => {
+    if (!config.runId || !selectedMetric || !selectedSeries.length || isLoadingMetrics) {
+      setPreview({ config: null, option: null })
+      return null
+    }
+    try {
       const normalized = normalizeChartConfig({
         ...config,
         metric: selectedMetric,
@@ -160,7 +178,7 @@ export function ChartBuilder({
       if (showError) setError(err.message || 'Invalid chart configuration.')
       return null
     }
-  }, [baseConfig, config, selectedMetric, selectedSeries])
+  }, [baseConfig, config, isLoadingMetrics, selectedMetric, selectedSeries])
 
   useEffect(() => {
     buildPreview(false)
@@ -217,12 +235,20 @@ export function ChartBuilder({
       <section className="builder-preview panel">
         <header className="section-header">
           <div>
-            <h2>{project?.name || 'Run'} preview</h2>
+            <h2>
+              {!project
+                ? 'Select a project'
+                : !config.runId
+                  ? 'Choose a run'
+                  : !selectedMetric
+                    ? 'Choose a metric'
+                    : `${project.name} · preview`}
+            </h2>
             <p>x: {config.xAxis} · y: {selectedMetric || 'none'}</p>
           </div>
         </header>
         <PanelCard title="Preview">
-          <MetricChart option={preview.option} onReady={(chart) => { previewChartRef.current = chart }} />
+          <MetricChart option={preview.option} onReady={(chart) => { previewChartRef.current = chart }} placeholder={chartPlaceholder} />
         </PanelCard>
       </section>
 
@@ -373,26 +399,30 @@ export function ChartBuilder({
             <Button disabled={!preview.option} onClick={() => handleExport('svg')} variant="secondary">Export SVG</Button>
             <Button disabled={isSaving || (!onSaveChart && !onAddPanel)} onClick={handleSave}>{isSaving ? 'Saving...' : saveLabel}</Button>
             {activeChartId && onDeleteChart ? (
-              <Button
-                disabled={isDeleting}
-                onClick={async () => {
-                  if (!window.confirm('Delete this saved chart? This cannot be undone.')) return
-                  setIsDeleting(true)
-                  try {
-                    await onDeleteChart(activeChartId)
-                  } catch (err) {
-                    setError(err.message || 'Failed to delete chart.')
-                  } finally {
-                    setIsDeleting(false)
-                  }
-                }}
-                variant="secondary"
-              >
-                {isDeleting ? 'Deleting...' : 'Delete chart'}
-              </Button>
+              <Button onClick={() => setShowDeleteConfirm(true)} variant="secondary">Delete chart</Button>
             ) : null}
           </div>
         </div>
+        {showDeleteConfirm ? (
+          <ConfirmDialog
+            title={`Delete "${config.name || config.title || 'this chart'}"?`}
+            message="This will permanently remove the saved chart configuration. This action cannot be undone."
+            confirmLabel={isDeleting ? 'Deleting...' : 'Delete'}
+            cancelLabel="Cancel"
+            onCancel={() => setShowDeleteConfirm(false)}
+            onConfirm={async () => {
+              setIsDeleting(true)
+              try {
+                await onDeleteChart(activeChartId)
+              } catch (err) {
+                setError(err.message || 'Failed to delete chart.')
+                setShowDeleteConfirm(false)
+              } finally {
+                setIsDeleting(false)
+              }
+            }}
+          />
+        ) : null}
       </div>
     </div>
   )
