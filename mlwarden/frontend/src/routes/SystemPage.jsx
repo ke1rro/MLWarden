@@ -52,7 +52,11 @@ function systemChartOption(metric, series, type) {
     xAxis: 'timestamp',
     xAxisLabel: 'Time',
     yAxisLabel: `${metric.label} (${unit})`,
+    showXAxisLabel: true,
+    showYAxisLabel: true,
     valueUnit: unit,
+    showToolbox: true,
+    showDataZoom: true,
     showLegend: false,
     showTooltip: true,
     color: areaMetrics.has(metric.id) ? '#2563eb' : '#0f766e',
@@ -61,7 +65,7 @@ function systemChartOption(metric, series, type) {
     pointSize: 4,
     smooth: true,
     area: areaMetrics.has(metric.id),
-    grid: { left: 64, right: 24, top: 66, bottom: 68 },
+    grid: { left: 64, right: 24, top: 66, bottom: 92 },
   }, series)
 }
 

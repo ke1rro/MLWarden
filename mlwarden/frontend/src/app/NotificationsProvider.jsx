@@ -3,6 +3,7 @@ import { eventToNotification } from '@/api/adapters.js'
 import { listRecentEvents } from '@/api/events.js'
 import { createWebSocketConnection } from '@/api/websocket.js'
 import { useAuth } from '@/app/useAuth.js'
+import { setUnreadFaviconBadge } from './faviconBadge.js'
 import { NotificationsContext } from './notificationsContext.js'
 
 const NOTIFICATIONS_STORAGE_KEY = 'mlwarden.notifications.v2'
@@ -85,10 +86,15 @@ export function NotificationsProvider({ children }) {
   const subscribers = useRef(new Set())
   const connection = useRef(null)
   const wasDisconnected = useRef(false)
+  const unreadCount = notifications.filter((notification) => !notification.readAt).length
 
   useEffect(() => {
     localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications))
   }, [notifications])
+
+  useEffect(() => {
+    setUnreadFaviconBadge(unreadCount > 0)
+  }, [unreadCount])
 
   const publish = useCallback((message) => {
     subscribers.current.forEach((callback) => callback(message))
@@ -175,7 +181,7 @@ export function NotificationsProvider({ children }) {
     () => ({
       notifications,
       activeToasts: notifications.filter((notification) => !notification.dismissedAt),
-      unreadCount: notifications.filter((notification) => !notification.readAt).length,
+      unreadCount,
       dismissNotification(id) {
         dispatch({ type: 'dismiss', id })
       },
@@ -187,7 +193,7 @@ export function NotificationsProvider({ children }) {
       },
       subscribe,
     }),
-    [notifications, subscribe],
+    [notifications, subscribe, unreadCount],
   )
 
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>

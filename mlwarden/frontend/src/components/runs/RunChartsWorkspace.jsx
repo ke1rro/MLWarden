@@ -9,6 +9,7 @@ import { IconButton } from '@/components/common/IconButton.jsx'
 import { ChartBuilder } from '@/components/charts/ChartBuilder.jsx'
 import { ChartGrid } from '@/components/charts/ChartGrid.jsx'
 import { exportChart } from '@/components/charts/chartExport.js'
+import { runColorForRun } from '@/components/charts/runColors.js'
 
 function matchesPanelQuery(panel, query) {
   if (!query.trim()) return true
@@ -67,6 +68,7 @@ export function RunChartsWorkspace({ metricSeries, project, run, images = [], ge
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [imageUrls, setImageUrls] = useState({})
   const chartRefs = useRef({})
+  const runColor = useMemo(() => runColorForRun(run), [run])
   const metricNames = useMemo(() => Object.keys(metricSeries), [metricSeries])
   const sdkPanels = useMemo(() => normalizeSdkPanels(run, metricNames), [metricNames, run])
   const builderRuns = useMemo(() => [run], [run])
@@ -147,6 +149,15 @@ export function RunChartsWorkspace({ metricSeries, project, run, images = [], ge
     )
   }
 
+  function handleUpdatePanelConfig(panelId, patch) {
+    setPanelOverrides((current) =>
+      (current ?? panels).map((panel) => {
+        if (panel.id !== panelId) return panel
+        return { ...panel, config: { ...(panel.config || {}), ...patch } }
+      }),
+    )
+  }
+
   async function handleExportPanel(panelId, format) {
     const chart = chartRefs.current[panelId]
     const panel = panels.find((item) => item.id === panelId)
@@ -173,6 +184,7 @@ export function RunChartsWorkspace({ metricSeries, project, run, images = [], ge
       </Toolbar>
       {visiblePanels.length ? (
         <ChartGrid
+          defaultColor={runColor}
           panels={visiblePanels}
           metricSeries={metricSeries}
           onChartReady={handleChartReady}
@@ -180,6 +192,7 @@ export function RunChartsWorkspace({ metricSeries, project, run, images = [], ge
           onRemovePanel={(panelId) => setPanelOverrides((current) => (current ?? panels).filter((item) => item.id !== panelId))}
           onReorderPanel={handleReorderPanel}
           onResizePanel={handleResizePanel}
+          onUpdatePanelConfig={handleUpdatePanelConfig}
         />
       ) : (
         <EmptyState title="No panels match this filter." message="Clear the panel search or add another metric panel." />
@@ -189,7 +202,6 @@ export function RunChartsWorkspace({ metricSeries, project, run, images = [], ge
           <header className="section-header">
             <div>
               <h2>Media panels</h2>
-              <p>Images logged by the SDK for training samples, predictions, and artifacts.</p>
             </div>
           </header>
           <div className="chart-grid compact-grid">
@@ -203,6 +215,7 @@ export function RunChartsWorkspace({ metricSeries, project, run, images = [], ge
             project={project}
             runs={builderRuns}
             initialMetricSeries={metricSeries}
+            initialConfig={{ color: runColor }}
             mode="panel"
             onAddPanel={handleAddPanel}
           />

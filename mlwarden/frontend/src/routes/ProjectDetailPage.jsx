@@ -1,4 +1,4 @@
-import { ExternalLink as ExternalLinkIcon, Plus, Settings, Trash2 as Trash2Icon } from 'lucide-react'
+import { ExternalLink as ExternalLinkIcon, Trash2 as Trash2Icon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { adaptProject, adaptRun } from '@/api/adapters.js'
@@ -6,15 +6,13 @@ import { deleteChart, listCharts } from '@/api/charts.js'
 import { getMetricSummary, getMetrics } from '@/api/metrics.js'
 import { getProject } from '@/api/projects.js'
 import { listRunComparisons } from '@/api/runComparisons.js'
-import { createRun, deleteRun, listRuns } from '@/api/runs.js'
+import { deleteRun, listRuns } from '@/api/runs.js'
 import { useNotifications } from '@/app/useNotifications.js'
 import { Button } from '@/components/common/Button.jsx'
-import { ActionMenu } from '@/components/common/ActionMenu.jsx'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog.jsx'
 import { ErrorState } from '@/components/common/ErrorState.jsx'
 import { LoadingState } from '@/components/common/LoadingState.jsx'
 import { MetricCard } from '@/components/common/MetricCard.jsx'
-import { Modal } from '@/components/common/Modal.jsx'
 import { PageHeader } from '@/components/common/PageHeader.jsx'
 import { SearchInput } from '@/components/common/SearchInput.jsx'
 import { Toolbar } from '@/components/common/Toolbar.jsx'
@@ -22,6 +20,7 @@ import { AppLayout } from '@/components/layout/AppLayout.jsx'
 import { RunTable } from '@/components/runs/RunTable.jsx'
 import { RunComparisonWorkspace } from '@/components/runs/RunComparisonWorkspace.jsx'
 import { MetricChart } from '@/components/charts/MetricChart.jsx'
+import { PanelCard } from '@/components/charts/PanelCard.jsx'
 import { buildChartOption, normalizeChartConfig } from '@/components/charts/chartOptions.js'
 
 const statusOptions = ['created', 'running', 'finished', 'failed', 'cancelled']
@@ -74,16 +73,15 @@ function ProjectRunFilters({
   )
 }
 
-function SavedChartPanel({ chart, previewSeries }) {
+function SavedChartPanel({ chart, previewSeries, actions = [] }) {
   const config = normalizeChartConfig({ ...chart.config, name: chart.name, chartType: chart.chart_type || chart.type })
   const metric = config.metric || config.yAxis || chart.name
   const option = buildChartOption({ ...config, showTitle: false }, previewSeries[metric])
 
   return (
-    <article className="chart-panel">
-      <header className="chart-panel-header"><h3>{chart.name}</h3></header>
+    <PanelCard actions={actions} title={chart.name}>
       <MetricChart option={option} />
-    </article>
+    </PanelCard>
   )
 }
 
@@ -99,16 +97,15 @@ function SavedChartsSection({ project, savedCharts, previewSeries, onDeleteChart
       </header>
       <div className="chart-grid compact-grid">
         {savedCharts.map((chart) => (
-          <div data-search-text={`${chart.name} ${project.name}`} key={chart.id} style={{ position: 'relative' }}>
-            <SavedChartPanel chart={chart} previewSeries={previewSeries} />
-            {onDeleteChart ? (
-              <div style={{ position: 'absolute', top: 8, right: 8 }}>
-                <ActionMenu items={[
-                  { label: 'Open in builder', icon: ExternalLinkIcon, onSelect: () => window.location.assign(`/projects/${project.id}/charts?chart=${chart.id}`) },
-                  { label: 'Delete chart', icon: Trash2Icon, onSelect: () => onDeleteChart(chart) },
-                ]} />
-              </div>
-            ) : null}
+          <div data-search-text={`${chart.name} ${project.name}`} key={chart.id}>
+            <SavedChartPanel
+              actions={onDeleteChart ? [
+                { label: 'Open in builder', icon: ExternalLinkIcon, onSelect: () => window.location.assign(`/projects/${project.id}/charts?chart=${chart.id}`) },
+                { label: 'Delete chart', icon: Trash2Icon, onSelect: () => onDeleteChart(chart) },
+              ] : []}
+              chart={chart}
+              previewSeries={previewSeries}
+            />
           </div>
         ))}
       </div>
@@ -130,10 +127,6 @@ export default function ProjectDetailPage() {
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('all')
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [isCreating, setIsCreating] = useState(false)
-  const [runForm, setRunForm] = useState({ name: '', description: '', tags: '' })
   const [selectedRunIds, setSelectedRunIds] = useState(initialSelectedRunIds)
   const [isComparisonActive, setIsComparisonActive] = useState(initialSelectedRunIds.length >= 2)
   const [activeComparison, setActiveComparison] = useState(null)
@@ -259,28 +252,6 @@ export default function ProjectDetailPage() {
     setIsComparisonActive(true)
   }
 
-  async function handleCreateRun(event) {
-    event.preventDefault()
-    setIsCreating(true)
-    setError('')
-    try {
-      await createRun(projectId, {
-        name: runForm.name.trim() || null,
-        description: runForm.description.trim() || null,
-        tags: runForm.tags.split(',').map((item) => item.trim()).filter(Boolean),
-        params: {},
-        metadata: { source: 'frontend' },
-      })
-      setRunForm({ name: '', description: '', tags: '' })
-      setIsCreateOpen(false)
-      await loadProjectWorkspace()
-    } catch (err) {
-      setError(err.message || 'Failed to create run.')
-    } finally {
-      setIsCreating(false)
-    }
-  }
-
   async function handleConfirmDeleteRun() {
     setIsDeletingRun(true)
     setError('')
@@ -335,33 +306,9 @@ export default function ProjectDetailPage() {
         title={project.name}
         subtitle={project.description}
         actions={(
-          <>
-            <Button onClick={() => setIsCreateOpen((current) => !current)}><Plus size={15} /> New run</Button>
-            <Link className="button button-secondary button-md" to={`/projects/${project.id}/charts`}>Open charts</Link>
-            <Button onClick={() => setIsSettingsOpen(true)} variant="secondary"><Settings size={15} /> Settings</Button>
-          </>
+          <Link className="button button-secondary button-md" to={`/projects/${project.id}/charts`}>Open charts</Link>
         )}
       />
-      {isCreateOpen ? (
-        <form className="panel inline-form" onSubmit={handleCreateRun}>
-          <label>
-            Run name
-            <input value={runForm.name} onChange={(event) => setRunForm((current) => ({ ...current, name: event.target.value }))} />
-          </label>
-          <label>
-            Description
-            <input value={runForm.description} onChange={(event) => setRunForm((current) => ({ ...current, description: event.target.value }))} />
-          </label>
-          <label>
-            Tags
-            <input placeholder="baseline, resnet" value={runForm.tags} onChange={(event) => setRunForm((current) => ({ ...current, tags: event.target.value }))} />
-          </label>
-          <div className="button-row">
-            <Button disabled={isCreating} type="submit">{isCreating ? 'Creating...' : 'Create run'}</Button>
-            <Button onClick={() => setIsCreateOpen(false)} variant="secondary">Cancel</Button>
-          </div>
-        </form>
-      ) : null}
       {error ? <ErrorState message={error} /> : null}
       {!isComparisonActive ? <ProjectTags tags={project.tags} /> : null}
       {!isComparisonActive ? <ProjectMetricSummary stats={projectStats} /> : null}
@@ -411,33 +358,6 @@ export default function ProjectDetailPage() {
           />
         </>
       )}
-      {isSettingsOpen ? (
-        <Modal title={`${project.name} settings`} description="Project metadata and local display settings." onClose={() => setIsSettingsOpen(false)}>
-          <div className="project-settings-panel">
-            <div className="metric-grid compact">
-              <MetricCard label="Runs" value={projectStats.runs} detail="total" />
-              <MetricCard label="Running" value={projectStats.running} detail="active" />
-              <MetricCard label="Charts" value={savedCharts.length} detail="saved" />
-            </div>
-            <section className="settings-summary-card">
-              <h3>Project profile</h3>
-              <dl>
-                <div><dt>Name</dt><dd>{project.name}</dd></div>
-                <div><dt>Description</dt><dd>{project.description || 'No description'}</dd></div>
-                <div><dt>Latest run</dt><dd>{project.latestRun}</dd></div>
-              </dl>
-            </section>
-            <section className="settings-summary-card">
-              <h3>Tags</h3>
-              {project.tags.length ? <ProjectTags tags={project.tags} /> : <p className="muted-copy">No tags configured.</p>}
-            </section>
-            <section className="settings-summary-card">
-              <h3>Metadata</h3>
-              <pre className="metadata-panel">{JSON.stringify(project.metadata || {}, null, 2)}</pre>
-            </section>
-          </div>
-        </Modal>
-      ) : null}
       {deleteRunTarget ? (
         <ConfirmDialog
           title={`Delete "${deleteRunTarget.name}"?`}

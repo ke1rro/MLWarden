@@ -1,4 +1,4 @@
-import { Download } from 'lucide-react'
+import { Download, Eye, EyeOff } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { MetricChart } from './MetricChart.jsx'
 import { PanelCard } from './PanelCard.jsx'
@@ -8,18 +8,21 @@ function normalizePanel(panel) {
   return typeof panel === 'string' ? { id: panel, metric: panel, size: 'md', type: 'line' } : panel
 }
 
-function ChartGridPanel({ panel, metricSeries, onChartReady, onExportPanel, onRemovePanel, onReorderPanel, onResizePanel }) {
+function ChartGridPanel({ panel, metricSeries, defaultColor, onChartReady, onExportPanel, onRemovePanel, onReorderPanel, onResizePanel, onUpdatePanelConfig }) {
   const metric = panel.metric || panel.config?.metric || panel.config?.yAxis
   const series = metricSeries[metric]
+  const showXAxisLabel = panel.config?.showXAxisLabel ?? panel.config?.showXAxis ?? false
+  const showYAxisLabel = panel.config?.showYAxisLabel ?? panel.config?.showYAxis ?? false
   const option = useMemo(() => buildChartOption({
     chartType: panel.type || panel.chartType || panel.config?.chartType || 'line',
     title: panel.title || metric,
     yAxis: panel.config?.yAxis || metric,
     yAxisLabel: panel.config?.yAxisLabel || metric,
     area: panel.area ?? panel.config?.area ?? metric?.includes('loss'),
+    color: panel.config?.color || defaultColor,
     ...(panel.config || {}),
     showTitle: false,
-  }, series), [metric, panel, series])
+  }, series), [defaultColor, metric, panel, series])
 
   const handleChartReady = useCallback((chart) => {
     onChartReady?.(panel.id, chart)
@@ -28,6 +31,16 @@ function ChartGridPanel({ panel, metricSeries, onChartReady, onExportPanel, onRe
   return (
     <PanelCard
       actions={[
+        {
+          label: showXAxisLabel ? 'Hide x-axis label' : 'Show x-axis label',
+          icon: showXAxisLabel ? EyeOff : Eye,
+          onSelect: () => onUpdatePanelConfig?.(panel.id, { showXAxisLabel: !showXAxisLabel }),
+        },
+        {
+          label: showYAxisLabel ? 'Hide y-axis label' : 'Show y-axis label',
+          icon: showYAxisLabel ? EyeOff : Eye,
+          onSelect: () => onUpdatePanelConfig?.(panel.id, { showYAxisLabel: !showYAxisLabel }),
+        },
         { label: 'Export PNG', icon: Download, onSelect: () => onExportPanel?.(panel.id, 'png') },
         { label: 'Export SVG', icon: Download, onSelect: () => onExportPanel?.(panel.id, 'svg') },
       ]}
@@ -57,9 +70,11 @@ function ChartGridPanel({ panel, metricSeries, onChartReady, onExportPanel, onRe
 export function ChartGrid({
   panels,
   metricSeries,
+  defaultColor,
   onRemovePanel,
   onReorderPanel,
   onResizePanel,
+  onUpdatePanelConfig,
   onExportPanel,
   onChartReady,
 }) {
@@ -70,12 +85,14 @@ export function ChartGrid({
         return (
           <ChartGridPanel
             key={panel.id}
+            defaultColor={defaultColor}
             metricSeries={metricSeries}
             onChartReady={onChartReady}
             onExportPanel={onExportPanel}
             onRemovePanel={onRemovePanel}
             onReorderPanel={onReorderPanel}
             onResizePanel={onResizePanel}
+            onUpdatePanelConfig={onUpdatePanelConfig}
             panel={panel}
           />
         )

@@ -5,7 +5,7 @@ const baseTextStyle = {
   fontWeight: 500,
 }
 
-const defaultGrid = { left: 56, right: 24, top: 58, bottom: 68 }
+const defaultGrid = { left: 48, right: 18, top: 44, bottom: 46 }
 
 
 
@@ -49,13 +49,19 @@ export function normalizeChartConfig(input = {}, defaults = {}) {
     metric: input.metric || yAxis,
     xAxis: input.xAxis || input.x_axis || defaults.xAxis || 'step',
     yAxis,
+    groupBy: input.groupBy ?? input.group_by ?? defaults.groupBy ?? '',
     filters: input.filters ?? defaults.filters ?? '',
     title: input.title ?? defaults.title ?? yAxis,
+    subtitle: input.subtitle ?? input.subTitle ?? input.sub_title ?? defaults.subtitle ?? '',
     showTitle: toBoolean(input.showTitle ?? input.show_title, defaults.showTitle ?? true),
+    showXAxisLabel: toBoolean(input.showXAxisLabel ?? input.show_x_axis_label ?? input.showXAxis ?? input.show_x_axis, defaults.showXAxisLabel ?? defaults.showXAxis ?? false),
+    showYAxisLabel: toBoolean(input.showYAxisLabel ?? input.show_y_axis_label ?? input.showYAxis ?? input.show_y_axis, defaults.showYAxisLabel ?? defaults.showYAxis ?? false),
     xAxisLabel: input.xAxisLabel ?? input.x_axis_label ?? defaults.xAxisLabel ?? 'Step',
     yAxisLabel: input.yAxisLabel ?? input.y_axis_label ?? defaults.yAxisLabel ?? yAxis,
     showLegend: toBoolean(input.showLegend ?? input.show_legend, defaults.showLegend ?? false),
     showTooltip: toBoolean(input.showTooltip ?? input.show_tooltip, defaults.showTooltip ?? true),
+    showToolbox: toBoolean(input.showToolbox ?? input.show_toolbox, defaults.showToolbox ?? false),
+    showDataZoom: toBoolean(input.showDataZoom ?? input.show_data_zoom, defaults.showDataZoom ?? false),
     color: input.color || defaults.color || '#2563eb',
     palette: input.palette || defaults.palette || '',
     fontSize: toNumber(input.fontSize ?? input.font_size, defaults.fontSize ?? 12),
@@ -136,16 +142,22 @@ export function buildChartOption(inputConfig, seriesInput = []) {
       name: source.name || config.yAxis || config.title || `Series ${seriesIndex + 1}`,
       type: seriesType,
       data,
+      color: source.color,
       smooth: seriesType === 'line' ? config.smooth : false,
       symbolSize: config.pointSize,
-      lineStyle: { width: isBestRun ? config.lineWidth + 2 : config.lineWidth },
-      areaStyle: config.area || config.chartType === 'area' ? { opacity: 0.14 } : undefined,
+      itemStyle: source.color ? { color: source.color } : undefined,
+      lineStyle: { width: isBestRun ? config.lineWidth + 2 : config.lineWidth, color: source.color },
+      areaStyle: config.area || config.chartType === 'area' ? { opacity: 0.14, color: source.color } : undefined,
       barMaxWidth: config.barWidth,
       z: isBestRun ? 4 : 1,
     }
   })
   const fontStyle = { ...baseTextStyle, fontSize: config.fontSize }
   const xAxisType = useExplicitX ? (config.xAxis === 'timestamp' ? 'time' : 'value') : 'category'
+  const grid = {
+    ...config.grid,
+    bottom: config.showDataZoom ? Math.max(config.grid.bottom, 88) : config.grid.bottom,
+  }
 
   const option = {
     animation: false,
@@ -154,8 +166,10 @@ export function buildChartOption(inputConfig, seriesInput = []) {
     title: {
       show: config.showTitle,
       text: config.title,
+      subtext: config.subtitle,
       left: 0,
       textStyle: { color: '#101828', fontSize: config.fontSize + 2, fontWeight: 750 },
+      subtextStyle: { ...fontStyle, fontWeight: 500 },
     },
     legend: {
       show: config.showLegend,
@@ -169,12 +183,15 @@ export function buildChartOption(inputConfig, seriesInput = []) {
       confine: true,
       valueFormatter: config.valueUnit ? (value) => `${value} ${config.valueUnit}` : undefined,
     },
-    dataZoom: [
-      { type: 'inside', xAxisIndex: 0, filterMode: 'none', moveOnMouseMove: false, moveOnMouseWheel: false, zoomOnMouseWheel: true },
-      { type: 'slider', xAxisIndex: 0, filterMode: 'none', height: 16, bottom: 4 },
-    ],
-    grid: config.grid,
+    dataZoom: config.showDataZoom
+      ? [
+          { type: 'inside', xAxisIndex: 0, filterMode: 'none', moveOnMouseMove: false, moveOnMouseWheel: false, zoomOnMouseWheel: true },
+          { type: 'slider', xAxisIndex: 0, filterMode: 'none', height: 16, bottom: 4 },
+        ]
+      : [],
+    grid,
     toolbox: {
+      show: config.showToolbox,
       feature: {
         dataZoom: { yAxisIndex: false },
         restore: {},
@@ -185,9 +202,10 @@ export function buildChartOption(inputConfig, seriesInput = []) {
       top: 24,
     },
     xAxis: {
-      name: config.xAxisLabel,
+      show: true,
+      name: config.showXAxisLabel ? config.xAxisLabel : '',
       nameLocation: 'middle',
-      nameGap: 38,
+      nameGap: 28,
       type: xAxisType,
       data: xData,
       boundaryGap: seriesType === 'bar',
@@ -196,7 +214,8 @@ export function buildChartOption(inputConfig, seriesInput = []) {
       axisLine: { lineStyle: { color: '#d9dee7' } },
     },
     yAxis: {
-      name: config.yAxisLabel,
+      show: true,
+      name: config.showYAxisLabel ? config.yAxisLabel : '',
       nameLocation: 'middle',
       nameGap: 42,
       type: 'value',

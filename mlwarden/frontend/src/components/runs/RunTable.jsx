@@ -12,7 +12,6 @@ export function RunTable({
   disabledRunIds = [],
   runColorMap = {},
   onRunSelect,
-  onRunAction,
   compact = false,
   showActions = true,
 }) {

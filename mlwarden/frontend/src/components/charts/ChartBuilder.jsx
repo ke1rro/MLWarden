@@ -6,11 +6,13 @@ import { MetricChart } from './MetricChart.jsx'
 import { PanelCard } from './PanelCard.jsx'
 import { buildChartOption, normalizeChartConfig, parseEchartsOverride } from './chartOptions.js'
 import { exportChart } from './chartExport.js'
+import { runColorForRun } from './runColors.js'
 
 const defaultOverride = '{\n  "grid": { "left": 56, "right": 24 }\n}'
 
 function defaultConfig(project, runs) {
   const runId = runs[0]?.id || ''
+  const runColor = runColorForRun(runs[0])
   return normalizeChartConfig({
     name: '',
     chartType: 'line',
@@ -19,11 +21,14 @@ function defaultConfig(project, runs) {
     yAxis: '',
     xAxis: 'step',
     title: '',
+    subtitle: '',
+    showXAxisLabel: false,
+    showYAxisLabel: false,
     xAxisLabel: 'Step',
     yAxisLabel: 'Value',
     showLegend: false,
     showTooltip: true,
-    color: '#2563eb',
+    color: runColor,
     fontSize: 12,
     lineWidth: 2,
     pointSize: 4,
@@ -93,7 +98,7 @@ export function ChartBuilder({
 
   useEffect(() => {
     if (!runs.length || config.runId) return
-    updateConfig({ runId: runs[0].id })
+    updateConfig({ runId: runs[0].id, color: runColorForRun(runs[0]) })
   }, [config.runId, runs, updateConfig])
 
   useEffect(() => {
@@ -238,7 +243,10 @@ export function ChartBuilder({
               </Field>
             ) : null}
             <Field label="Run">
-              <select value={config.runId} onChange={(event) => updateConfig({ runId: event.target.value, metric: '', yAxis: '' })}>
+              <select value={config.runId} onChange={(event) => {
+                const nextRun = runs.find((run) => run.id === event.target.value)
+                updateConfig({ runId: event.target.value, metric: '', yAxis: '', color: runColorForRun(nextRun) })
+              }}>
                 {runs.map((run) => <option key={run.id} value={run.id}>{run.name}</option>)}
               </select>
             </Field>
@@ -269,12 +277,33 @@ export function ChartBuilder({
             <Field label="Title">
               <input value={config.title} onChange={(event) => updateConfig({ title: event.target.value })} />
             </Field>
+            <Field label="Subtitle">
+              <input value={config.subtitle} onChange={(event) => updateConfig({ subtitle: event.target.value })} />
+            </Field>
             <Field label="X-axis label">
               <input value={config.xAxisLabel} onChange={(event) => updateConfig({ xAxisLabel: event.target.value })} />
             </Field>
             <Field label="Y-axis label">
               <input value={config.yAxisLabel} onChange={(event) => updateConfig({ yAxisLabel: event.target.value })} />
             </Field>
+            <div className="toggle-grid">
+              <label>
+                <input checked={config.showXAxisLabel} onChange={(event) => updateConfig({ showXAxisLabel: event.target.checked })} type="checkbox" />
+                X label
+              </label>
+              <label>
+                <input checked={config.showYAxisLabel} onChange={(event) => updateConfig({ showYAxisLabel: event.target.checked })} type="checkbox" />
+                Y label
+              </label>
+              <label>
+                <input checked={config.showLegend} onChange={(event) => updateConfig({ showLegend: event.target.checked })} type="checkbox" />
+                Legend
+              </label>
+              <label>
+                <input checked={config.showTooltip} onChange={(event) => updateConfig({ showTooltip: event.target.checked })} type="checkbox" />
+                Tooltip
+              </label>
+            </div>
           </section>
 
           <section className="builder-section builder-section-inline">
@@ -302,6 +331,16 @@ export function ChartBuilder({
               <Field label="Bar width">
                 <input min="4" max="80" value={config.barWidth} onChange={(event) => updateConfig({ barWidth: event.target.value })} type="number" />
               </Field>
+            </div>
+            <div className="toggle-grid">
+              <label>
+                <input checked={config.smooth} onChange={(event) => updateConfig({ smooth: event.target.checked })} type="checkbox" />
+                Smooth
+              </label>
+              <label>
+                <input checked={config.area} onChange={(event) => updateConfig({ area: event.target.checked })} type="checkbox" />
+                Area
+              </label>
             </div>
           </section>
 

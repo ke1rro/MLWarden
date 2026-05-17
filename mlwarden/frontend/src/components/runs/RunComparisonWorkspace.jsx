@@ -1,4 +1,4 @@
-import { Download, Settings, SlidersHorizontal } from 'lucide-react'
+import { Download, Eye, EyeOff, Settings, SlidersHorizontal } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { compareRuns, createRunComparison } from '@/api/runComparisons.js'
 import { Button } from '@/components/common/Button.jsx'
@@ -11,6 +11,7 @@ import { PanelCard } from '@/components/charts/PanelCard.jsx'
 import { MetricChart } from '@/components/charts/MetricChart.jsx'
 import { buildChartOption } from '@/components/charts/chartOptions.js'
 import { exportChart } from '@/components/charts/chartExport.js'
+import { runPaletteForRuns } from '@/components/charts/runColors.js'
 import { saveTextFile } from '@/shared/downloads.js'
 
 const preferredMetrics = ['val.psnr', 'val.best_psnr', 'val.loss', 'train.loss', 'epoch', 'val.accuracy', 'train.accuracy']
@@ -70,6 +71,7 @@ export function RunComparisonWorkspace({
   const [metricOrder, setMetricOrder] = useState([])
   // Per-panel size overrides
   const [panelSizes, setPanelSizes] = useState({})
+  const [panelAxisLabels, setPanelAxisLabels] = useState({})
   // Multi-chart export modal
   const [isExportOpen, setIsExportOpen] = useState(false)
   const [exportSelection, setExportSelection] = useState(new Set())
@@ -192,8 +194,25 @@ export function RunComparisonWorkspace({
     setPanelSizes((prev) => ({ ...prev, [metric]: size }))
   }
 
+  function handleToggleAxisLabel(metric, key, value) {
+    setPanelAxisLabels((prev) => ({
+      ...prev,
+      [metric]: {
+        ...(prev[metric] || {}),
+        [key]: value,
+      },
+    }))
+  }
+
   function optionForMetric(metric) {
-    const series = buildMetricSeries(comparison, metric)
+    const axisLabels = panelAxisLabels[metric] || {}
+    const comparisonRuns = comparison?.runs || []
+    const palette = runPaletteForRuns(comparisonRuns)
+    const colorByRunId = new Map(comparisonRuns.map((run, index) => [run.id, palette[index]]))
+    const series = buildMetricSeries(comparison, metric).map((item) => ({
+      ...item,
+      color: colorByRunId.get(item.runId),
+    }))
     return buildChartOption({
       chartType: config.chartType,
       metric,
@@ -204,13 +223,15 @@ export function RunComparisonWorkspace({
       showTitle: false,
       xAxisLabel: metricLabel(config.xAxis),
       yAxisLabel: metric,
+      showXAxisLabel: axisLabels.showXAxisLabel ?? false,
+      showYAxisLabel: axisLabels.showYAxisLabel ?? false,
       showLegend: config.showLegend,
       showTooltip: config.showTooltip,
       smooth: Number(config.smoothing) > 0,
       lineWidth: 2,
       pointSize: config.chartType === 'scatter' ? 5 : 3,
       grid: { left: 56, right: 24, top: config.showLegend ? 42 : 18, bottom: 50 },
-      palette: (comparison?.runs || []).map((run) => run.color),
+      palette,
       useExplicitX: true,
       highlightBestRun: config.highlightBestRun,
       bestRunId: comparison?.summary?.best_run_id,
@@ -312,9 +333,22 @@ export function RunComparisonWorkspace({
       <div className="chart-grid comparison-chart-grid">
         {visibleMetrics.map((metric) => {
           const panelSize = panelSizes[metric] || (metric === primaryMetric ? 'lg' : 'md')
+          const axisLabels = panelAxisLabels[metric] || {}
+          const showXAxisLabel = axisLabels.showXAxisLabel ?? false
+          const showYAxisLabel = axisLabels.showYAxisLabel ?? false
           return (
             <PanelCard
               actions={[
+                {
+                  label: showXAxisLabel ? 'Hide x-axis label' : 'Show x-axis label',
+                  icon: showXAxisLabel ? EyeOff : Eye,
+                  onSelect: () => handleToggleAxisLabel(metric, 'showXAxisLabel', !showXAxisLabel),
+                },
+                {
+                  label: showYAxisLabel ? 'Hide y-axis label' : 'Show y-axis label',
+                  icon: showYAxisLabel ? EyeOff : Eye,
+                  onSelect: () => handleToggleAxisLabel(metric, 'showYAxisLabel', !showYAxisLabel),
+                },
                 { label: 'Export PNG', icon: Download, onSelect: () => handleExportMetric(metric, 'png') },
                 { label: 'Export SVG', icon: Download, onSelect: () => handleExportMetric(metric, 'svg') },
               ]}

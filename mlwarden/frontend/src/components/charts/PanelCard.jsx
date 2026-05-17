@@ -24,7 +24,7 @@ export function PanelCard({
     >
       <header className="chart-panel-header">
         <h3>{title}</h3>
-        <div>
+        <div className="chart-panel-actions">
           {draggable ? <IconButton className="drag-handle" draggable icon={GripVertical} label={`Move ${title}`} onDragStart={onDragStart} /> : null}
           {onResize ? (
             <IconButton
@@ -34,7 +34,7 @@ export function PanelCard({
             />
           ) : null}
           {onRemove ? <IconButton className="icon-button-compact" label={`Remove ${title}`} icon={X} onClick={onRemove} /> : null}
-          <ActionMenu items={actions} />
+          {actions.length ? <ActionMenu items={actions} /> : null}
         </div>
       </header>
       {children}
