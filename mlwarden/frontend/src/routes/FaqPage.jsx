@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { API_BASE_URL } from '@/api/client.js'
 import { Button } from '@/components/common/Button.jsx'
-import { PageHeader } from '@/components/common/PageHeader.jsx'
 import { AppLayout } from '@/components/layout/AppLayout.jsx'
 
 const questions = [
@@ -57,9 +56,12 @@ run.finish(summary={"final_loss": 0.218})`, [baseUrl])
   }
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'FAQ' }]}>
+    <AppLayout
+      breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'FAQ' }]}
+      title="FAQ"
+      subtitle="Answers and SDK reference for local MLWarden experiment tracking."
+    >
       <div className="faq-page">
-        <PageHeader title="FAQ" subtitle="Answers and SDK reference for local MLWarden experiment tracking." />
         <section className="panel faq-section">
           <header className="section-header">
             <div>

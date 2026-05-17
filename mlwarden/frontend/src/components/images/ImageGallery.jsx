@@ -1,87 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { AssetUploadForm } from '@/components/common/AssetUploadForm.jsx'
 import { Button } from '@/components/common/Button.jsx'
 import { EmptyState } from '@/components/common/EmptyState.jsx'
 import { JsonPreview } from '@/components/common/JsonPreview.jsx'
 import { SearchInput } from '@/components/common/SearchInput.jsx'
 import { Toolbar } from '@/components/common/Toolbar.jsx'
 
-function ImageUploadForm({ onUpload }) {
-  const [file, setFile] = useState(null)
-  const [name, setName] = useState('')
-  const [step, setStep] = useState('')
-  const [caption, setCaption] = useState('')
-  const [metadata, setMetadata] = useState('')
-  const [error, setError] = useState('')
-  const [isUploading, setIsUploading] = useState(false)
-  const fileInputRef = useRef(null)
-
-  async function handleSubmit(event) {
-    event.preventDefault()
-    const formElement = event.currentTarget
-    setError('')
-    if (!file) {
-      setError('Choose an image file.')
-      return
-    }
-
-    let parsedMetadata
-    try {
-      parsedMetadata = metadata.trim() ? JSON.parse(metadata) : undefined
-    } catch {
-      setError('Metadata is not valid JSON.')
-      return
-    }
-
-    try {
-      setIsUploading(true)
-      await onUpload({
-        file,
-        name,
-        step,
-        caption,
-        metadata: parsedMetadata,
-      })
-      setFile(null)
-      setName('')
-      setStep('')
-      setCaption('')
-      setMetadata('')
-      formElement.reset()
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    } catch (err) {
-      setError(err.message || 'Image upload failed.')
-    } finally {
-      setIsUploading(false)
-    }
-  }
-
-  return (
-    <form className="panel inline-form" onSubmit={handleSubmit}>
-      <label>
-        File
-        <input ref={fileInputRef} accept="image/png,image/jpeg,image/webp" onChange={(event) => setFile(event.target.files?.[0] || null)} type="file" />
-      </label>
-      <label>
-        Name
-        <input value={name} onChange={(event) => setName(event.target.value)} />
-      </label>
-      <label>
-        Step
-        <input min="0" value={step} onChange={(event) => setStep(event.target.value)} type="number" />
-      </label>
-      <label>
-        Caption
-        <input value={caption} onChange={(event) => setCaption(event.target.value)} />
-      </label>
-      <label>
-        Metadata JSON
-        <input placeholder='{"split": "validation"}' value={metadata} onChange={(event) => setMetadata(event.target.value)} />
-      </label>
-      {error ? <p className="form-error">{error}</p> : null}
-      <Button disabled={isUploading} type="submit">{isUploading ? 'Uploading...' : 'Upload image'}</Button>
-    </form>
-  )
-}
+const imageUploadFields = [
+  { name: 'name', label: 'Name' },
+  { name: 'step', label: 'Step', min: '0', type: 'number' },
+  { name: 'caption', label: 'Caption' },
+]
 
 export function ImageGallery({ images, getImageUrl, onUpload }) {
   const [query, setQuery] = useState('')
@@ -138,7 +67,16 @@ export function ImageGallery({ images, getImageUrl, onUpload }) {
         </select>
         {onUpload ? <Button onClick={() => setIsUploadOpen((current) => !current)} variant="secondary">Upload image</Button> : null}
       </Toolbar>
-      {isUploadOpen ? <ImageUploadForm onUpload={onUpload} /> : null}
+      {isUploadOpen ? (
+        <AssetUploadForm
+          fields={imageUploadFields}
+          fileAccept="image/png,image/jpeg,image/webp"
+          fileLabel="Image file"
+          metadataPlaceholder='{"split": "validation"}'
+          onUpload={onUpload}
+          submitLabel="Upload image"
+        />
+      ) : null}
       {!images.length ? <EmptyState title="No images uploaded." message="Input previews, reconstructions, and masks will appear here." /> : null}
       <div className="image-grid">
         {filteredImages.map((image, index) => (

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 import { eventToNotification } from '@/api/adapters.js'
-import { listRecentEvents } from '@/api/events.js'
-import { createWebSocketConnection } from '@/api/websocket.js'
+import { eventsApi } from '@/api/events.js'
+import { websocketApi } from '@/api/websocket.js'
 import { useAuth } from '@/app/useAuth.js'
 import { setUnreadFaviconBadge } from './faviconBadge.js'
 import { NotificationsContext } from './notificationsContext.js'
@@ -108,7 +108,7 @@ export function NotificationsProvider({ children }) {
     }
 
     let cancelled = false
-    listRecentEvents({ limit: 25 })
+    eventsApi.listRecent({ limit: 25 })
       .then((response) => {
         if (cancelled) return
         const recent = (response.items || [])
@@ -133,7 +133,7 @@ export function NotificationsProvider({ children }) {
     if (!isAuthenticated || !token) return undefined
 
     connection.current?.stop()
-    connection.current = createWebSocketConnection({
+    connection.current = websocketApi.createConnection({
       onOpen() {
         if (wasDisconnected.current) {
           const message = {

@@ -11,15 +11,15 @@ import {
   adaptTableMeta,
   adaptTableRows,
 } from '@/api/adapters.js'
-import { downloadArtifact, listArtifacts, uploadArtifact } from '@/api/artifacts.js'
-import { listRunEvents } from '@/api/events.js'
-import { listImages, uploadImage } from '@/api/images.js'
-import { getLogs } from '@/api/logs.js'
-import { getMetricSummary, getMetrics } from '@/api/metrics.js'
-import { getParams } from '@/api/params.js'
-import { getProject } from '@/api/projects.js'
-import { cancelRun, failRun, finishRun, getRun, startRun } from '@/api/runs.js'
-import { getTable, listTables } from '@/api/tables.js'
+import { artifactsApi } from '@/api/artifacts.js'
+import { eventsApi } from '@/api/events.js'
+import { imagesApi } from '@/api/images.js'
+import { logsApi } from '@/api/logs.js'
+import { metricsApi } from '@/api/metrics.js'
+import { paramsApi } from '@/api/params.js'
+import { projectsApi } from '@/api/projects.js'
+import { runsApi } from '@/api/runs.js'
+import { tablesApi } from '@/api/tables.js'
 import { useNotifications } from '@/app/useNotifications.js'
 
 const initialWorkspace = {
@@ -43,7 +43,7 @@ export function useRunWorkspace(runId) {
   const reload = useCallback(async () => {
     setError(null)
     try {
-      const runResponse = await getRun(runId)
+      const runResponse = await runsApi.get(runId)
       const [
         projectResponse,
         paramsResponse,
@@ -54,20 +54,20 @@ export function useRunWorkspace(runId) {
         artifactsResponse,
         eventsResponse,
       ] = await Promise.all([
-        getProject(runResponse.project_id),
-        getParams(runId),
-        getMetricSummary(runId),
-        getLogs(runId, { limit: 500 }),
-        listTables(runId),
-        listImages(runId, { limit: 500 }),
-        listArtifacts(runId, { limit: 500 }),
-        listRunEvents(runId, { limit: 500 }),
+        projectsApi.get(runResponse.project_id),
+        paramsApi.get(runId),
+        metricsApi.summary(runId),
+        logsApi.list(runId, { limit: 500 }),
+        tablesApi.list(runId),
+        imagesApi.list(runId, { limit: 500 }),
+        artifactsApi.list(runId, { limit: 500 }),
+        eventsApi.listRun(runId, { limit: 500 }),
       ])
 
       const params = adaptParams(paramsResponse)
       const summaries = adaptMetricSummary(summaryResponse.items || [])
       const names = summaries.map((summary) => summary.name)
-      const metricsResponse = names.length ? await getMetrics(runId, names) : { series: {} }
+      const metricsResponse = names.length ? await metricsApi.get(runId, names) : { series: {} }
 
       setWorkspace({
         project: adaptProject(projectResponse),
@@ -100,10 +100,10 @@ export function useRunWorkspace(runId) {
   const runAction = useCallback(async (action) => {
     setError(null)
     try {
-      if (action === 'start') await startRun(runId)
-      if (action === 'finish') await finishRun(runId)
-      if (action === 'fail') await failRun(runId, { error_message: 'Marked failed from UI' })
-      if (action === 'cancel') await cancelRun(runId)
+      if (action === 'start') await runsApi.start(runId)
+      if (action === 'finish') await runsApi.finish(runId)
+      if (action === 'fail') await runsApi.fail(runId, { error_message: 'Marked failed from UI' })
+      if (action === 'cancel') await runsApi.cancel(runId)
       await reload()
     } catch (err) {
       setError(err)
@@ -111,7 +111,7 @@ export function useRunWorkspace(runId) {
   }, [reload, runId])
 
   const loadTableRows = useCallback(async (tableName, params) => {
-    const response = await getTable(runId, tableName, params)
+    const response = await tablesApi.get(runId, tableName, params)
     return {
       rows: adaptTableRows(response.rows || response.items || []),
       total: response.total || 0,
@@ -119,18 +119,20 @@ export function useRunWorkspace(runId) {
   }, [runId])
 
   const uploadRunImage = useCallback(async (payload) => {
-    await uploadImage(runId, payload)
+    await imagesApi.upload(runId, payload)
     await reload()
   }, [reload, runId])
 
   const uploadRunArtifact = useCallback(async (payload) => {
-    await uploadArtifact(runId, payload)
+    await artifactsApi.upload(runId, payload)
     await reload()
   }, [reload, runId])
 
   const downloadRunArtifact = useCallback(async (artifact) => {
-    await downloadArtifact(artifact.id, artifact.original_filename || artifact.name)
+    await artifactsApi.download(artifact.id, artifact.original_filename || artifact.name)
   }, [])
+
+  const getRunImageUrl = useCallback((imageId) => imagesApi.getFileUrl(imageId), [])
 
   return {
     ...workspace,
@@ -142,5 +144,6 @@ export function useRunWorkspace(runId) {
     uploadRunImage,
     uploadRunArtifact,
     downloadRunArtifact,
+    getRunImageUrl,
   }
 }

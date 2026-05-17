@@ -1,5 +1,4 @@
 import { Navigate, useParams, useSearchParams } from 'react-router-dom'
-import { getImageFileUrl } from '@/api/images.js'
 import { ArtifactList } from '@/components/artifacts/ArtifactList.jsx'
 import { EmptyState } from '@/components/common/EmptyState.jsx'
 import { ErrorState } from '@/components/common/ErrorState.jsx'
@@ -33,6 +32,7 @@ export default function RunDetailPage() {
     downloadRunArtifact,
     error,
     events,
+    getRunImageUrl,
     images,
     isLoading,
     loadTableRows,
@@ -53,10 +53,10 @@ export default function RunDetailPage() {
     if (activeTab === 'overview') return <RunOverview run={run} metricSummaries={metricSummaries} />
     if (activeTab === 'logs') return <LogViewer logs={logs} />
     if (activeTab === 'tables') return <DataTable tables={tables} loadTableRows={loadTableRows} />
-    if (activeTab === 'images') return <ImageGallery getImageUrl={getImageFileUrl} images={images} onUpload={uploadRunImage} />
+    if (activeTab === 'images') return <ImageGallery getImageUrl={getRunImageUrl} images={images} onUpload={uploadRunImage} />
     if (activeTab === 'artifacts') return <ArtifactList artifacts={artifacts} onDownload={downloadRunArtifact} onUpload={uploadRunArtifact} />
     if (activeTab === 'events') return <EventTimeline events={events} />
-    return <RunChartsWorkspace metricSeries={metricSeries} project={project} run={run} images={images} getImageUrl={getImageFileUrl} />
+    return <RunChartsWorkspace metricSeries={metricSeries} project={project} run={run} images={images} getImageUrl={getRunImageUrl} />
   }
 
   if (isLoading) {

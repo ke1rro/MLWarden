@@ -3,22 +3,16 @@ import * as echarts from 'echarts'
 import { EmptyState } from '@/components/common/EmptyState.jsx'
 import { buildChartOption, optionHasSeriesData } from './chartOptions.js'
 
-export function MetricChart({ title, series, type = 'line', area = false, option, renderer = 'svg', onReady, placeholder }) {
+export function MetricChart({ config, series, option, renderer = 'svg', onReady, placeholder }) {
   const chartRef = useRef(null)
   const chartInstanceRef = useRef(null)
   const onReadyRef = useRef(onReady)
 
   const resolvedOption = useMemo(() => {
     if (option) return option
-    if (!series) return null
-    return buildChartOption({
-      chartType: type,
-      title,
-      yAxis: title,
-      yAxisLabel: title,
-      area,
-    }, series)
-  }, [area, option, series, title, type])
+    if (!config || !series) return null
+    return buildChartOption(config, series)
+  }, [config, option, series])
   const hasData = optionHasSeriesData(resolvedOption)
 
   useEffect(() => {

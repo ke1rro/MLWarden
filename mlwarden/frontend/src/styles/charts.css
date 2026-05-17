@@ -103,6 +103,7 @@
 }
 
 .builder-controls-row {
+  align-items: start;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4);
@@ -112,9 +113,9 @@
   border-top: 0;
   border-left: 1px solid var(--color-border);
   display: grid;
-  flex: 1 1 160px;
+  flex: 1 1 220px;
   gap: var(--space-2);
-  min-width: 140px;
+  min-width: 220px;
   padding-left: var(--space-3);
   padding-top: 0;
 }
@@ -167,6 +168,10 @@
 .builder-section h3 {
   font-size: 13px;
   margin: 0;
+}
+
+.builder-section textarea {
+  min-height: 76px;
 }
 
 .builder-field-row,

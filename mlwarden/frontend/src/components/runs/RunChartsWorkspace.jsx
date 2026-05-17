@@ -61,6 +61,140 @@ function MediaPanel({ image, imageUrl }) {
   )
 }
 
+function RunChartToolbar({ metricCount, onAddPanel, onFilterPanels, onQueryChange, query }) {
+  return (
+    <Toolbar>
+      <SearchInput value={query} onChange={onQueryChange} placeholder="Search panels" />
+      <IconButton label="Filter panels" icon={SlidersHorizontal} onClick={onFilterPanels} />
+      <Button disabled={!metricCount} onClick={onAddPanel}><Plus size={15} /> Add panel</Button>
+    </Toolbar>
+  )
+}
+
+function RunMetricPanelSection({
+  metricSeries,
+  onChartReady,
+  onExportPanel,
+  onRemovePanel,
+  onReorderPanel,
+  onResizePanel,
+  onUpdatePanelConfig,
+  panels,
+  runColor,
+}) {
+  if (!panels.length) {
+    return <EmptyState title="No panels match this filter." message="Clear the panel search or add another metric panel." />
+  }
+
+  return (
+    <ChartGrid
+      defaultColor={runColor}
+      panels={panels}
+      metricSeries={metricSeries}
+      onChartReady={onChartReady}
+      onExportPanel={onExportPanel}
+      onRemovePanel={onRemovePanel}
+      onReorderPanel={onReorderPanel}
+      onResizePanel={onResizePanel}
+      onUpdatePanelConfig={onUpdatePanelConfig}
+    />
+  )
+}
+
+function RunMediaPanelSection({ imageUrls, images }) {
+  if (!images.length) return null
+
+  return (
+    <section className="media-panel-section">
+      <header className="section-header">
+        <div>
+          <h2>Media panels</h2>
+        </div>
+      </header>
+      <div className="chart-grid compact-grid">
+        {images.map((image) => <MediaPanel image={image} imageUrl={imageUrls[image.id]} key={image.id} />)}
+      </div>
+    </section>
+  )
+}
+
+function AddPanelDialog({ isOpen, metricSeries, onAddPanel, onClose, project, runColor, runs }) {
+  if (!isOpen) return null
+
+  return (
+    <Modal title="Chart builder" description="Create a local run panel from SDK-logged metrics." onClose={onClose} size="lg">
+      <ChartBuilder
+        project={project}
+        runs={runs}
+        initialMetricSeries={metricSeries}
+        initialConfig={{ color: runColor }}
+        mode="panel"
+        onAddPanel={onAddPanel}
+      />
+    </Modal>
+  )
+}
+
+function PanelFilterDialog({ isOpen, metrics, onClose, onToggleMetric, panels }) {
+  if (!isOpen) return null
+
+  return (
+    <Modal title="Filter panels" description="Toggle visible metric panels in the grid." onClose={onClose}>
+      <div className="option-list">
+        {metrics.map((metric) => {
+          const active = panels.some((panel) => panel.metric === metric)
+          return (
+            <button
+              className={active ? 'is-selected' : ''}
+              key={metric}
+              onClick={() => onToggleMetric(metric, active)}
+              type="button"
+            >
+              {metric}
+            </button>
+          )
+        })}
+      </div>
+    </Modal>
+  )
+}
+
+function RunChartDialogs({
+  isAddOpen,
+  isFilterOpen,
+  metricNames,
+  metricSeries,
+  onAddPanel,
+  onCloseAdd,
+  onCloseFilter,
+  onToggleMetric,
+  panels,
+  project,
+  runColor,
+  runs,
+}) {
+  return (
+    <>
+      <AddPanelDialog
+        isOpen={isAddOpen}
+        metricSeries={metricSeries}
+        onAddPanel={onAddPanel}
+        onClose={onCloseAdd}
+        project={project}
+        runColor={runColor}
+        runs={runs}
+      />
+      <PanelFilterDialog
+        isOpen={isFilterOpen}
+        metrics={metricNames}
+        onClose={onCloseFilter}
+        onToggleMetric={onToggleMetric}
+        panels={panels}
+      />
+    </>
+  )
+}
+
 export function RunChartsWorkspace({ metricSeries, project, run, images = [], getImageUrl }) {
   const [query, setQuery] = useState('')
   const [panelOverrides, setPanelOverrides] = useState(null)
@@ -171,81 +305,53 @@ export function RunChartsWorkspace({ metricSeries, project, run, images = [], ge
     })
   }
 
+  function handleToggleMetric(metric, active) {
+    setPanelOverrides((current) =>
+      active
+        ? (current ?? panels).filter((panel) => panel.metric !== metric)
+        : [...(current ?? panels), { id: metric, metric, size: 'md' }],
+    )
+  }
+
   if (!metricNames.length) {
     return <EmptyState title="No metrics logged yet." message="Charts will appear after a worker logs metrics for this run." />
   }
 
   return (
     <section className="workspace-stack">
-      <Toolbar>
-        <SearchInput value={query} onChange={setQuery} placeholder="Search panels" />
-        <IconButton label="Filter panels" icon={SlidersHorizontal} onClick={() => setIsFilterOpen(true)} />
-        <Button disabled={!metricNames.length} onClick={() => setIsAddOpen(true)}><Plus size={15} /> Add panel</Button>
-      </Toolbar>
-      {visiblePanels.length ? (
-        <ChartGrid
-          defaultColor={runColor}
-          panels={visiblePanels}
-          metricSeries={metricSeries}
-          onChartReady={handleChartReady}
-          onExportPanel={handleExportPanel}
-          onRemovePanel={(panelId) => setPanelOverrides((current) => (current ?? panels).filter((item) => item.id !== panelId))}
-          onReorderPanel={handleReorderPanel}
-          onResizePanel={handleResizePanel}
-          onUpdatePanelConfig={handleUpdatePanelConfig}
-        />
-      ) : (
-        <EmptyState title="No panels match this filter." message="Clear the panel search or add another metric panel." />
-      )}
-      {mediaImages.length ? (
-        <section className="media-panel-section">
-          <header className="section-header">
-            <div>
-              <h2>Media panels</h2>
-            </div>
-          </header>
-          <div className="chart-grid compact-grid">
-            {mediaImages.map((image) => <MediaPanel image={image} imageUrl={imageUrls[image.id]} key={image.id} />)}
-          </div>
-        </section>
-      ) : null}
-      {isAddOpen ? (
-        <Modal title="Chart builder" description="Create a local run panel from SDK-logged metrics." onClose={() => setIsAddOpen(false)} size="lg">
-          <ChartBuilder
-            project={project}
-            runs={builderRuns}
-            initialMetricSeries={metricSeries}
-            initialConfig={{ color: runColor }}
-            mode="panel"
-            onAddPanel={handleAddPanel}
-          />
-        </Modal>
-      ) : null}
-      {isFilterOpen ? (
-        <Modal title="Filter panels" description="Toggle visible metric panels in the grid." onClose={() => setIsFilterOpen(false)}>
-          <div className="option-list">
-            {metricNames.map((metric) => {
-              const active = panels.some((panel) => panel.metric === metric)
-              return (
-                <button
-                  className={active ? 'is-selected' : ''}
-                  key={metric}
-                  onClick={() => {
-                    setPanelOverrides((current) =>
-                      active
-                        ? (current ?? panels).filter((panel) => panel.metric !== metric)
-                        : [...(current ?? panels), { id: metric, metric, size: 'md' }],
-                    )
-                  }}
-                  type="button"
-                >
-                  {metric}
-                </button>
-              )
-            })}
-          </div>
-        </Modal>
-      ) : null}
+      <RunChartToolbar
+        metricCount={metricNames.length}
+        onAddPanel={() => setIsAddOpen(true)}
+        onFilterPanels={() => setIsFilterOpen(true)}
+        onQueryChange={setQuery}
+        query={query}
+      />
+      <RunMetricPanelSection
+        metricSeries={metricSeries}
+        onChartReady={handleChartReady}
+        onExportPanel={handleExportPanel}
+        onRemovePanel={(panelId) => setPanelOverrides((current) => (current ?? panels).filter((item) => item.id !== panelId))}
+        onReorderPanel={handleReorderPanel}
+        onResizePanel={handleResizePanel}
+        onUpdatePanelConfig={handleUpdatePanelConfig}
+        panels={visiblePanels}
+        runColor={runColor}
+      />
+      <RunMediaPanelSection imageUrls={imageUrls} images={mediaImages} />
+      <RunChartDialogs
+        isAddOpen={isAddOpen}
+        isFilterOpen={isFilterOpen}
+        metricNames={metricNames}
+        metricSeries={metricSeries}
+        onAddPanel={handleAddPanel}
+        onCloseAdd={() => setIsAddOpen(false)}
+        onCloseFilter={() => setIsFilterOpen(false)}
+        onToggleMetric={handleToggleMetric}
+        panels={panels}
+        project={project}
+        runColor={runColor}
+        runs={builderRuns}
+      />
     </section>
   )
 }

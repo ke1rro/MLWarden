@@ -1,167 +1,96 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { adaptProject, summarizeProjects } from '@/api/adapters.js'
-import { deleteProject, listProjects, updateProject } from '@/api/projects.js'
-import { useNotifications } from '@/app/useNotifications.js'
 import { AppLayout } from '@/components/layout/AppLayout.jsx'
 import { Button } from '@/components/common/Button.jsx'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog.jsx'
 import { ErrorState } from '@/components/common/ErrorState.jsx'
 import { LoadingState } from '@/components/common/LoadingState.jsx'
 import { Modal } from '@/components/common/Modal.jsx'
-import { PageHeader } from '@/components/common/PageHeader.jsx'
 import { SearchInput } from '@/components/common/SearchInput.jsx'
 import { Toolbar } from '@/components/common/Toolbar.jsx'
 import { ProjectSummaryCards } from '@/components/projects/ProjectSummaryCards.jsx'
 import { ProjectTable } from '@/components/projects/ProjectTable.jsx'
+import { useProjectsWorkspace } from '@/hooks/useProjectsWorkspace.js'
 
-const refreshEvents = new Set([
-  'backend.connected',
-  'project.created',
-  'project.updated',
-  'project.deleted',
-  'run.created',
-  'run.started',
-  'run.finished',
-  'run.failed',
-  'run.cancelled',
-])
-
-export default function ProjectsPage() {
-  const [query, setQuery] = useState('')
-  const [projects, setProjects] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [editProject, setEditProject] = useState(null)
-  const [editForm, setEditForm] = useState({ name: '', description: '', tags: '' })
-  const [isEditing, setIsEditing] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState(null)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const { subscribe } = useNotifications()
-  const summary = useMemo(() => summarizeProjects(projects), [projects])
-  const filteredProjects = useMemo(
-    () => projects.filter((project) => `${project.name} ${project.description} ${project.tags.join(' ')}`.toLowerCase().includes(query.toLowerCase())),
-    [projects, query],
-  )
-
-  const loadProjects = useCallback(async () => {
-    setError('')
-    try {
-      const response = await listProjects()
-      setProjects((response.items || []).map(adaptProject))
-    } catch (err) {
-      setError(err.message || 'Failed to load projects.')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    loadProjects()
-  }, [loadProjects])
-
-  useEffect(() => subscribe((message) => {
-    if (refreshEvents.has(message.type)) loadProjects()
-  }), [loadProjects, subscribe])
-
-  function handleEditProject(project) {
-    setEditProject(project)
-    setEditForm({
-      name: project.name || '',
-      description: project.description || '',
-      tags: (project.tags || []).join(', '),
-    })
-  }
-
-  async function handleSaveEdit(event) {
-    event.preventDefault()
-    setIsEditing(true)
-    setError('')
-    try {
-      await updateProject(editProject.id, {
-        name: editForm.name.trim(),
-        description: editForm.description.trim() || null,
-        tags: editForm.tags.split(',').map((tag) => tag.trim()).filter(Boolean),
-      })
-      setEditProject(null)
-      await loadProjects()
-    } catch (err) {
-      setError(err.message || 'Failed to update project.')
-    } finally {
-      setIsEditing(false)
-    }
-  }
-
-  async function handleConfirmDelete() {
-    setIsDeleting(true)
-    setError('')
-    try {
-      await deleteProject(deleteTarget.id)
-      setDeleteTarget(null)
-      await loadProjects()
-    } catch (err) {
-      setError(err.message || 'Failed to delete project.')
-    } finally {
-      setIsDeleting(false)
-    }
-  }
+function ProjectEditDialog({ editForm, editProject, isEditing, onChange, onClose, onSave }) {
+  if (!editProject) return null
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Projects' }]}>
-      <PageHeader
-        title="Projects"
-        subtitle="Track experiment runs, metrics, artifacts, and workflow outputs."
+    <Modal
+      title={`Edit ${editProject.name}`}
+      description="Update project name, description, and tags."
+      onClose={onClose}
+      footer={(
+        <>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button disabled={isEditing} onClick={onSave}>{isEditing ? 'Saving...' : 'Save changes'}</Button>
+        </>
+      )}
+    >
+      <form className="settings-form-grid" onSubmit={onSave}>
+        <label>
+          Project name
+          <input value={editForm.name} onChange={(event) => onChange((current) => ({ ...current, name: event.target.value }))} required />
+        </label>
+        <label>
+          Description
+          <input value={editForm.description} onChange={(event) => onChange((current) => ({ ...current, description: event.target.value }))} />
+        </label>
+        <label>
+          Tags
+          <input placeholder="vision, compression" value={editForm.tags} onChange={(event) => onChange((current) => ({ ...current, tags: event.target.value }))} />
+        </label>
+      </form>
+    </Modal>
+  )
+}
+
+function ProjectDialogs({ workspace }) {
+  return (
+    <>
+      <ProjectEditDialog
+        editForm={workspace.editForm}
+        editProject={workspace.editProject}
+        isEditing={workspace.isEditing}
+        onChange={workspace.setEditForm}
+        onClose={() => workspace.setEditProject(null)}
+        onSave={workspace.saveEdit}
       />
-      <ProjectSummaryCards summary={summary} />
-      <Toolbar>
-        <SearchInput value={query} onChange={setQuery} placeholder="Search projects" />
-      </Toolbar>
-      {isLoading ? <LoadingState message="Loading projects..." /> : null}
-      {error ? <ErrorState message={error} /> : null}
-      {!isLoading && !error ? (
-        <ProjectTable
-          projects={filteredProjects}
-          onEditProject={handleEditProject}
-          onDeleteProject={(project) => setDeleteTarget(project)}
-        />
-      ) : null}
-      {editProject ? (
-        <Modal
-          title={`Edit ${editProject.name}`}
-          description="Update project name, description, and tags."
-          onClose={() => setEditProject(null)}
-          footer={(
-            <>
-              <Button variant="secondary" onClick={() => setEditProject(null)}>Cancel</Button>
-              <Button disabled={isEditing} onClick={handleSaveEdit}>{isEditing ? 'Saving...' : 'Save changes'}</Button>
-            </>
-          )}
-        >
-          <form className="settings-form-grid" onSubmit={handleSaveEdit}>
-            <label>
-              Project name
-              <input value={editForm.name} onChange={(event) => setEditForm((current) => ({ ...current, name: event.target.value }))} required />
-            </label>
-            <label>
-              Description
-              <input value={editForm.description} onChange={(event) => setEditForm((current) => ({ ...current, description: event.target.value }))} />
-            </label>
-            <label>
-              Tags
-              <input placeholder="vision, compression" value={editForm.tags} onChange={(event) => setEditForm((current) => ({ ...current, tags: event.target.value }))} />
-            </label>
-          </form>
-        </Modal>
-      ) : null}
-      {deleteTarget ? (
+      {workspace.deleteTarget ? (
         <ConfirmDialog
-          title={`Delete "${deleteTarget.name}"?`}
+          title={`Delete "${workspace.deleteTarget.name}"?`}
           message="This will soft-delete the project. This action may be irreversible depending on server configuration."
-          confirmLabel={isDeleting ? 'Deleting...' : 'Delete'}
+          confirmLabel={workspace.isDeleting ? 'Deleting...' : 'Delete'}
           cancelLabel="Cancel"
-          onCancel={() => setDeleteTarget(null)}
-          onConfirm={handleConfirmDelete}
+          onCancel={() => workspace.setDeleteTarget(null)}
+          onConfirm={workspace.confirmDelete}
         />
       ) : null}
+    </>
+  )
+}
+
+export default function ProjectsPage() {
+  const workspace = useProjectsWorkspace()
+
+  return (
+    <AppLayout
+      breadcrumbs={[{ label: 'MLWarden', to: '/workspace' }, { label: 'Projects' }]}
+      title="Projects"
+      subtitle="Track experiment runs, metrics, artifacts, and workflow outputs."
+    >
+      <ProjectSummaryCards summary={workspace.summary} />
+      <Toolbar>
+        <SearchInput value={workspace.query} onChange={workspace.setQuery} placeholder="Search projects" />
+      </Toolbar>
+      {workspace.isLoading ? <LoadingState message="Loading projects..." /> : null}
+      {workspace.error ? <ErrorState message={workspace.error} /> : null}
+      {!workspace.isLoading && !workspace.error ? (
+        <ProjectTable
+          projects={workspace.filteredProjects}
+          onEditProject={workspace.edit}
+          onDeleteProject={workspace.setDeleteTarget}
+        />
+      ) : null}
+      <ProjectDialogs workspace={workspace} />
     </AppLayout>
   )
 }

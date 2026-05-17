@@ -10,123 +10,127 @@ import { IconButton } from '@/components/common/IconButton.jsx'
 import { Logo } from '@/components/common/Logo.jsx'
 import { NotificationHistory } from '@/components/notifications/NotificationHistory.jsx'
 
-export function TopBar({ breadcrumbs }) {
-  const { user, logout } = useAuth()
-  const { markAllRead, unreadCount } = useNotifications()
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
-  const notificationRef = useRef(null)
-  const searchRef = useRef(null)
-  const userRef = useRef(null)
-
+function useOutsideClose(isOpen, ref, onClose) {
   useEffect(() => {
-    if (!isHistoryOpen && !isUserMenuOpen && !isSearchOpen) return undefined
+    if (!isOpen) return undefined
 
     function handlePointerDown(event) {
-      if (isHistoryOpen && !notificationRef.current?.contains(event.target)) {
-        setIsHistoryOpen(false)
-      }
-      if (isUserMenuOpen && !userRef.current?.contains(event.target)) {
-        setIsUserMenuOpen(false)
-      }
-      if (isSearchOpen && !searchRef.current?.contains(event.target)) {
-        setIsSearchOpen(false)
-      }
+      if (!ref.current?.contains(event.target)) onClose()
     }
 
     document.addEventListener('pointerdown', handlePointerDown)
     return () => document.removeEventListener('pointerdown', handlePointerDown)
-  }, [isHistoryOpen, isSearchOpen, isUserMenuOpen])
+  }, [isOpen, onClose, ref])
+}
 
-  function handleToggleHistory() {
-    setIsHistoryOpen((current) => !current)
-    markAllRead()
-  }
+function GlobalSearchControl() {
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const searchRef = useRef(null)
+  useOutsideClose(isSearchOpen, searchRef, () => setIsSearchOpen(false))
 
   function handleSearchSubmit(event) {
     event.preventDefault()
     setIsSearchOpen(true)
   }
 
-  function handleConfirmLogout() {
-    setIsLogoutConfirmOpen(false)
-    setIsUserMenuOpen(false)
-    logout()
+  return (
+    <div className="global-search-wrap" ref={searchRef}>
+      <form className="global-search" onSubmit={handleSearchSubmit}>
+        <Search size={15} />
+        <input
+          value={searchQuery}
+          onChange={(event) => {
+            setSearchQuery(event.target.value)
+            setIsSearchOpen(true)
+          }}
+          onFocus={() => setIsSearchOpen(true)}
+          type="search"
+          placeholder="Search workspace"
+        />
+      </form>
+      {isSearchOpen ? (
+        <GlobalSearchModal
+          query={searchQuery}
+          onClose={() => setIsSearchOpen(false)}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+function NotificationsMenu() {
+  const { markAllRead, unreadCount } = useNotifications()
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const notificationRef = useRef(null)
+  useOutsideClose(isHistoryOpen, notificationRef, () => setIsHistoryOpen(false))
+
+  function handleToggleHistory() {
+    setIsHistoryOpen((current) => !current)
+    markAllRead()
   }
 
   return (
-    <header className="topbar">
-      <Logo className="topbar-logo" />
-      <Breadcrumbs items={breadcrumbs} />
-      <div className="topbar-actions">
-        <div className="global-search-wrap" ref={searchRef}>
-          <form className="global-search" onSubmit={handleSearchSubmit}>
-            <Search size={15} />
-            <input
-              value={searchQuery}
-              onChange={(event) => {
-                setSearchQuery(event.target.value)
-                setIsSearchOpen(true)
-              }}
-              onFocus={() => setIsSearchOpen(true)}
-              type="search"
-              placeholder="Search workspace"
-            />
-          </form>
-          {isSearchOpen ? (
-            <GlobalSearchModal
-              query={searchQuery}
-              onClose={() => setIsSearchOpen(false)}
-            />
-          ) : null}
-        </div>
-        <div className="notification-menu" ref={notificationRef}>
-          <button
-            aria-expanded={isHistoryOpen}
-            aria-label="View notification history"
-            className="notification-button"
-            onClick={handleToggleHistory}
-            type="button"
-          >
-            <Bell size={16} />
-            {unreadCount ? <span>{unreadCount}</span> : null}
-          </button>
-          {isHistoryOpen ? <NotificationHistory onClose={() => setIsHistoryOpen(false)} /> : null}
-        </div>
-        <Link aria-label="Help" className="icon-button" title="Help" to="/faq">
-          <CircleHelp size={16} />
-        </Link>
-        <div className="user-menu" ref={userRef}>
-          <button
-            aria-expanded={isUserMenuOpen}
-            className="user-chip"
-            type="button"
-            onClick={() => setIsUserMenuOpen((current) => !current)}
-            title="User menu"
-          >
-            <span>{user?.initials || 'AD'}</span>
-            <strong>{user?.username || 'admin'}</strong>
-          </button>
-          {isUserMenuOpen ? (
-            <div className="user-popover">
-              <div className="user-popover-header">
-                <UserRound size={17} />
-                <div>
-                  <strong>{user?.username || 'admin'}</strong>
-                  <span>{user?.role || 'User'}</span>
-                </div>
-              </div>
+    <div className="notification-menu" ref={notificationRef}>
+      <button
+        aria-expanded={isHistoryOpen}
+        aria-label="View notification history"
+        className="notification-button"
+        onClick={handleToggleHistory}
+        type="button"
+      >
+        <Bell size={16} />
+        {unreadCount ? <span>{unreadCount}</span> : null}
+      </button>
+      {isHistoryOpen ? <NotificationHistory onClose={() => setIsHistoryOpen(false)} /> : null}
+    </div>
+  )
+}
 
-              <button type="button" onClick={() => setIsLogoutConfirmOpen(true)}>
-                <LogOut size={15} />
-                Log out
-              </button>
+function HelpLink() {
+  return (
+    <Link aria-label="Help" className="icon-button" title="Help" to="/faq">
+      <CircleHelp size={16} />
+    </Link>
+  )
+}
+
+function UserMenu() {
+  const { user, logout } = useAuth()
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
+  const userRef = useRef(null)
+  useOutsideClose(isUserMenuOpen, userRef, () => setIsUserMenuOpen(false))
+
+  return (
+    <>
+      <div className="user-menu" ref={userRef}>
+        <button
+          aria-expanded={isUserMenuOpen}
+          className="user-chip"
+          type="button"
+          onClick={() => setIsUserMenuOpen((current) => !current)}
+          title="User menu"
+        >
+          <span>{user?.initials || 'AD'}</span>
+          <strong>{user?.username || 'admin'}</strong>
+        </button>
+        {isUserMenuOpen ? (
+          <div className="user-popover">
+            <div className="user-popover-header">
+              <UserRound size={17} />
+              <div>
+                <strong>{user?.username || 'admin'}</strong>
+                <span>{user?.role || 'User'}</span>
+              </div>
             </div>
-          ) : null}
-        </div>
+
+            <button type="button" onClick={() => setIsLogoutConfirmOpen(true)}>
+              <LogOut size={15} />
+              Log out
+            </button>
+          </div>
+        ) : null}
       </div>
       {isLogoutConfirmOpen ? (
         <ConfirmDialog
@@ -135,9 +139,28 @@ export function TopBar({ breadcrumbs }) {
           confirmLabel="Yes"
           cancelLabel="No"
           onCancel={() => setIsLogoutConfirmOpen(false)}
-          onConfirm={handleConfirmLogout}
+          onConfirm={() => {
+            setIsLogoutConfirmOpen(false)
+            setIsUserMenuOpen(false)
+            logout()
+          }}
         />
       ) : null}
+    </>
+  )
+}
+
+export function TopBar({ breadcrumbs }) {
+  return (
+    <header className="topbar">
+      <Logo className="topbar-logo" />
+      <Breadcrumbs items={breadcrumbs} />
+      <div className="topbar-actions">
+        <GlobalSearchControl />
+        <NotificationsMenu />
+        <HelpLink />
+        <UserMenu />
+      </div>
     </header>
   )
 }

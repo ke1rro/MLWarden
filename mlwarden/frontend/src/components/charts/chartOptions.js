@@ -7,8 +7,6 @@ const baseTextStyle = {
 
 const defaultGrid = { left: 48, right: 18, top: 44, bottom: 46 }
 
-
-
 function toNumber(value, fallback) {
   const next = Number(value)
   return Number.isFinite(next) ? next : fallback
@@ -29,10 +27,30 @@ function normalizeGrid(grid = {}) {
   }
 }
 
-export function parseEchartsOverride(value) {
+function parseJsonObject(value, label) {
   if (!value) return {}
-  if (typeof value === 'object') return value
-  return JSON.parse(value)
+  if (typeof value === 'object') {
+    if (Array.isArray(value)) throw new Error(`${label} must be a JSON object.`)
+    return value
+  }
+  let parsed
+  try {
+    parsed = JSON.parse(value)
+  } catch {
+    throw new Error(`${label} must be valid JSON.`)
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`${label} must be a JSON object.`)
+  }
+  return parsed
+}
+
+export function parseEchartsOverride(value) {
+  return parseJsonObject(value, 'ECharts override')
+}
+
+export function parseChartFilters(value) {
+  return parseJsonObject(value, 'Filters')
 }
 
 export function normalizeChartConfig(input = {}, defaults = {}) {
@@ -96,11 +114,79 @@ function deepMerge(base, override) {
 function pointX(point, xAxis, index) {
   if (xAxis === 'timestamp') return point.timestamp || point.created_at || (point.step ?? index)
   if (xAxis === 'step') return point.step ?? index
-  return point[xAxis] ?? point.context?.[xAxis] ?? point.step ?? index
+  return pointValue(point, xAxis) ?? point.step ?? index
 }
 
 function pointY(point, yAxis) {
-  return point.value ?? point[yAxis] ?? point.context?.[yAxis] ?? null
+  return point.value ?? pointValue(point, yAxis) ?? null
+}
+
+function valueAtPath(source, path) {
+  if (!source || !path) return undefined
+  return String(path).split('.').reduce((value, segment) => value?.[segment], source)
+}
+
+function pointValue(point, field) {
+  if (!field) return undefined
+  return point?.[field] ?? point?.context?.[field] ?? valueAtPath(point, field) ?? valueAtPath(point?.context, field)
+}
+
+function seriesValue(series, field) {
+  if (!field) return undefined
+  if (field === 'run' || field === 'runName') return series.name
+  return series?.[field] ?? valueAtPath(series, field)
+}
+
+function valueMatches(actual, expected) {
+  if (Array.isArray(expected)) return expected.some((item) => valueMatches(actual, item))
+  if (actual === undefined || actual === null) return expected === actual
+  if (expected && typeof expected === 'object') {
+    const min = expected.min ?? expected.gte
+    const max = expected.max ?? expected.lte
+    const gt = expected.gt
+    const lt = expected.lt
+    if (min !== undefined && Number(actual) < Number(min)) return false
+    if (max !== undefined && Number(actual) > Number(max)) return false
+    if (gt !== undefined && Number(actual) <= Number(gt)) return false
+    if (lt !== undefined && Number(actual) >= Number(lt)) return false
+    if (expected.eq !== undefined) return valueMatches(actual, expected.eq)
+    return true
+  }
+  return String(actual) === String(expected)
+}
+
+function filterSeriesData(series, filters) {
+  const entries = Object.entries(filters)
+  if (!entries.length) return series
+  return series.map((source) => ({
+    ...source,
+    data: (source.data || []).filter((point) =>
+      entries.every(([field, expected]) => valueMatches(pointValue(point, field) ?? seriesValue(source, field), expected)),
+    ),
+  }))
+}
+
+function groupSeriesData(series, config) {
+  const groupBy = String(config.groupBy || '').trim()
+  if (!groupBy) return series
+
+  return series.flatMap((source) => {
+    const buckets = new Map()
+    ;(source.data || []).forEach((point) => {
+      const rawValue = pointValue(point, groupBy) ?? seriesValue(source, groupBy)
+      const groupValue = rawValue === undefined || rawValue === null || rawValue === '' ? 'ungrouped' : String(rawValue)
+      if (!buckets.has(groupValue)) buckets.set(groupValue, [])
+      buckets.get(groupValue).push(point)
+    })
+    if (buckets.size === 1 && buckets.has('ungrouped')) return [source]
+    const baseName = source.name || config.yAxis || config.metric || config.title || 'Series'
+    return [...buckets.entries()].map(([groupValue, data]) => ({
+      ...source,
+      id: `${source.id || source.runId || baseName}-${groupValue}`,
+      name: `${baseName} · ${groupValue}`,
+      data,
+    }))
+  })
 }
 
 function normalizeSeriesInput(seriesInput, config) {
@@ -123,11 +209,17 @@ function paletteFor(config) {
   return [config.color]
 }
 
+function prepareSeriesInput(seriesInput, config) {
+  const filters = parseChartFilters(config.filters)
+  const sourceSeries = normalizeSeriesInput(seriesInput, config)
+  return groupSeriesData(filterSeriesData(sourceSeries, filters), config)
+}
+
 export function buildChartOption(inputConfig, seriesInput = []) {
   const config = normalizeChartConfig(inputConfig)
   const override = parseEchartsOverride(config.echartsOptionOverride)
   const seriesType = config.chartType === 'area' ? 'line' : config.chartType
-  const sourceSeries = normalizeSeriesInput(seriesInput, config)
+  const sourceSeries = prepareSeriesInput(seriesInput, config)
   const useExplicitX = config.useExplicitX || seriesType === 'scatter'
   const xData = useExplicitX ? undefined : sourceSeries[0]?.data?.map((point, index) => pointX(point, config.xAxis, index)) || []
   const chartSeries = sourceSeries.map((source, seriesIndex) => {

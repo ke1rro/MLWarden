@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { getCurrentUser, loginRequest } from '@/api/auth.js'
+import { authApi } from '@/api/auth.js'
 import { clearAuthState, readAuthState, writeAuthState } from '@/api/client.js'
 import { AuthContext } from './authContext.js'
 
@@ -36,7 +36,7 @@ export function AuthProvider({ children }) {
 
     let cancelled = false
 
-    getCurrentUser()
+    authApi.currentUser()
       .then((currentUser) => {
         if (cancelled) return
         const nextUser = decorateUser(currentUser)
@@ -65,7 +65,7 @@ export function AuthProvider({ children }) {
   }, [logout])
 
   const login = useCallback(async (username, password) => {
-    const tokenResponse = await loginRequest({ username, password })
+    const tokenResponse = await authApi.login({ username, password })
     writeAuthState({
       access_token: tokenResponse.access_token,
       expires_at: tokenResponse.expires_at,
@@ -73,7 +73,7 @@ export function AuthProvider({ children }) {
     })
     let currentUser
     try {
-      currentUser = await getCurrentUser()
+      currentUser = await authApi.currentUser()
     } catch (error) {
       clearAuthState()
       throw error

@@ -1,21 +1,49 @@
-import { apiRequest } from '@/api/client.js'
+import { apiClient } from '@/api/client.js'
+
+export class ChartsApi {
+  constructor({ client = apiClient } = {}) {
+    this.client = client
+  }
+
+  list(projectId) {
+    return this.client.request(`/api/projects/${projectId}/charts`)
+  }
+
+  create(projectId, body) {
+    return this.client.request(`/api/projects/${projectId}/charts`, { method: 'POST', body })
+  }
+
+  get(chartId) {
+    return this.client.request(`/api/charts/${chartId}`)
+  }
+
+  update(chartId, body) {
+    return this.client.request(`/api/charts/${chartId}`, { method: 'PATCH', body })
+  }
+
+  delete(chartId) {
+    return this.client.request(`/api/charts/${chartId}`, { method: 'DELETE' })
+  }
+}
+
+export const chartsApi = new ChartsApi()
 
 export function listCharts(projectId) {
-  return apiRequest(`/api/projects/${projectId}/charts`)
+  return chartsApi.list(projectId)
 }
 
 export function createChart(projectId, body) {
-  return apiRequest(`/api/projects/${projectId}/charts`, { method: 'POST', body })
+  return chartsApi.create(projectId, body)
 }
 
 export function getChart(chartId) {
-  return apiRequest(`/api/charts/${chartId}`)
+  return chartsApi.get(chartId)
 }
 
 export function updateChart(chartId, body) {
-  return apiRequest(`/api/charts/${chartId}`, { method: 'PATCH', body })
+  return chartsApi.update(chartId, body)
 }
 
 export function deleteChart(chartId) {
-  return apiRequest(`/api/charts/${chartId}`, { method: 'DELETE' })
+  return chartsApi.delete(chartId)
 }
