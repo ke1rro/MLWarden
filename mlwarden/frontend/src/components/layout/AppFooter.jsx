@@ -45,7 +45,7 @@ export function AppFooter() {
 
         {/* Bottom bar */}
         <div className="app-footer-bottom">
-          <span className="app-footer-copy">© {new Date().getFullYear()} MLWarden — MIT License</span>
+          <span className="app-footer-copy">© {new Date().getFullYear()} MLWarden – MIT License</span>
 
           <nav className="app-footer-nav" aria-label="Footer navigation">
             {MAIN_LINKS.map((link) => (

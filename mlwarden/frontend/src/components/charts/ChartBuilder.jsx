@@ -505,11 +505,10 @@ function ChartAdvancedControls({ config, onChange }) {
   )
 }
 
-function ChartBuilderActions({ activeChartId, canExport, canSave, isSaving, onDelete, onExport, onPreview, onSave, saveLabel }) {
+function ChartBuilderActions({ activeChartId, canExport, canSave, isSaving, onDelete, onExport, onSave, saveLabel }) {
   return (
     <div className="builder-actions-row">
       <div className="button-row">
-        <Button onClick={onPreview} variant="secondary">Preview</Button>
         <Button disabled={!canExport} onClick={() => onExport('png')} variant="secondary">Export PNG</Button>
         <Button disabled={!canExport} onClick={() => onExport('svg')} variant="secondary">Export SVG</Button>
         <Button disabled={isSaving || !canSave || !onSave} onClick={onSave}>{isSaving ? 'Saving...' : saveLabel}</Button>
@@ -742,10 +741,6 @@ export function ChartBuilder({
     }
   }
 
-  function handlePreview() {
-    buildPreview(true)
-  }
-
   async function handleConfirmDelete() {
     setIsDeleting(true)
     try {
@@ -782,7 +777,6 @@ export function ChartBuilder({
             isSaving={isSaving}
             onDelete={activeChartId && onDeleteChart ? () => setShowDeleteConfirm(true) : null}
             onExport={handleExport}
-            onPreview={handlePreview}
             onSave={onSaveChart || onAddPanel ? handleSave : null}
             saveLabel={saveLabel}
           />
