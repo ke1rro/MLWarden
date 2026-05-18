@@ -22,9 +22,14 @@ class Tracker:
         timeout: float = 30.0,
     ) -> None:
         self.base_url = (
-            base_url or os.environ.get("MLWARDEN_URL") or "http://localhost:8000"
+            base_url
+            or os.environ.get("MLWARDEN_BASE_URL")
+            or os.environ.get("MLWARDEN_URL")
+            or "http://localhost:8000"
         ).rstrip("/")
-        self.api_key = api_key or os.environ.get("MLWARDEN_API_KEY")
+        self.api_key = (
+            api_key or os.environ.get("MLWARDEN_TOKEN") or os.environ.get("MLWARDEN_API_KEY")
+        )
         self.project_name = project or os.environ.get("MLWARDEN_PROJECT") or "default"
         self.client = httpx.Client(base_url=self.base_url, timeout=timeout)
 
@@ -87,6 +92,22 @@ class Tracker:
             },
         )
         return Run(self, run_data)
+
+    def create_chart(
+        self,
+        project: str | dict[str, Any],
+        name: str,
+        chart_type: str = "line",
+        config: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        project_id = project["id"] if isinstance(project, dict) else project
+        if not project_id:
+            raise TrackerError("Project id is required to create a chart")
+        return self.request(
+            "POST",
+            f"/api/projects/{project_id}/charts",
+            json={"name": name, "chart_type": chart_type, "config": config or {}},
+        )
 
     def run(
         self,
@@ -164,6 +185,16 @@ class Run:
             payload["tags"] = tags
         self.data = self.tracker.request("PATCH", f"/api/runs/{self.id}", json=payload)
         return self.data
+
+    def create_chart(
+        self,
+        name: str,
+        chart_type: str = "line",
+        config: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        if not self.project_id:
+            raise TrackerError("Run project_id is required to create a chart")
+        return self.tracker.create_chart(self.project_id, name, chart_type, config)
 
     def define_panel(
         self,

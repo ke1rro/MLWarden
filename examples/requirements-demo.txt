@@ -1,5 +1,8 @@
+httpx
 numpy
 matplotlib
 pillow
+scikit-learn
+joblib
 torch
 tensorflow

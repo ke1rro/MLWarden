@@ -31,9 +31,7 @@ def sdk_mock_server(free_tcp_port: int) -> tuple[str, list[dict[str, Any]]]:
             return authorization
         if api_key == TEST_API_KEY:
             return f"X-API-Key {api_key}"
-        raise HTTPException(
-            status_code=401, detail="missing or invalid worker credentials"
-        )
+        raise HTTPException(status_code=401, detail="missing or invalid worker credentials")
 
     async def json_body(request: Request) -> dict[str, Any]:
         if request.headers.get("content-type", "").startswith("application/json"):
@@ -45,9 +43,7 @@ def sdk_mock_server(free_tcp_port: int) -> tuple[str, list[dict[str, Any]]]:
         return {"status": "ok"}
 
     @app.get("/api/projects")
-    async def list_projects(
-        request: Request, name: str | None = None
-    ) -> dict[str, Any]:
+    async def list_projects(request: Request, name: str | None = None) -> dict[str, Any]:
         auth = require_auth(request)
         calls.append({"name": "list_projects", "auth": auth, "query_name": name})
         items = [project] if name in {None, project["name"]} else []
@@ -64,9 +60,7 @@ def sdk_mock_server(free_tcp_port: int) -> tuple[str, list[dict[str, Any]]]:
     async def create_run(project_id: str, request: Request) -> dict[str, Any]:
         auth = require_auth(request)
         body = await json_body(request)
-        calls.append(
-            {"name": "create_run", "auth": auth, "project_id": project_id, "body": body}
-        )
+        calls.append({"name": "create_run", "auth": auth, "project_id": project_id, "body": body})
         return {**run, "status": "created", "created_at": "2026-05-11T10:00:00Z"}
 
     @app.post("/api/runs/{run_id}/start")
@@ -79,9 +73,7 @@ def sdk_mock_server(free_tcp_port: int) -> tuple[str, list[dict[str, Any]]]:
     async def finish_run(run_id: str, request: Request) -> dict[str, Any]:
         auth = require_auth(request)
         body = await json_body(request)
-        calls.append(
-            {"name": "finish_run", "auth": auth, "run_id": run_id, "body": body}
-        )
+        calls.append({"name": "finish_run", "auth": auth, "run_id": run_id, "body": body})
         return {**run, "status": "finished"}
 
     @app.post("/api/runs/{run_id}/fail")
@@ -95,28 +87,35 @@ def sdk_mock_server(free_tcp_port: int) -> tuple[str, list[dict[str, Any]]]:
     async def put_params(run_id: str, request: Request) -> dict[str, Any]:
         auth = require_auth(request)
         body = await json_body(request)
-        calls.append(
-            {"name": "put_params", "auth": auth, "run_id": run_id, "body": body}
-        )
+        calls.append({"name": "put_params", "auth": auth, "run_id": run_id, "body": body})
         return {"params": body.get("params", body)}
 
     @app.post("/api/runs/{run_id}/metrics")
     async def log_metric(run_id: str, request: Request) -> dict[str, Any]:
         auth = require_auth(request)
         body = await json_body(request)
-        calls.append(
-            {"name": "log_metric", "auth": auth, "run_id": run_id, "body": body}
-        )
+        calls.append({"name": "log_metric", "auth": auth, "run_id": run_id, "body": body})
         return body
 
     @app.post("/api/runs/{run_id}/logs")
     async def append_log(run_id: str, request: Request) -> dict[str, Any]:
         auth = require_auth(request)
         body = await json_body(request)
-        calls.append(
-            {"name": "append_log", "auth": auth, "run_id": run_id, "body": body}
-        )
+        calls.append({"name": "append_log", "auth": auth, "run_id": run_id, "body": body})
         return body
+
+    @app.post("/api/projects/{project_id}/charts")
+    async def create_chart(project_id: str, request: Request) -> dict[str, Any]:
+        auth = require_auth(request)
+        body = await json_body(request)
+        calls.append({"name": "create_chart", "auth": auth, "project_id": project_id, "body": body})
+        return {
+            "id": "chart-sdk",
+            "project_id": project_id,
+            "name": body["name"],
+            "chart_type": body["chart_type"],
+            "config": body.get("config") or {},
+        }
 
     base_url = f"http://127.0.0.1:{free_tcp_port}"
     config = uvicorn.Config(
@@ -208,3 +207,56 @@ def test_tracker_run_context_manager_reports_failure(
     assert fail_call["body"]["error_message"] == "training failed"
     assert fail_call["body"]["error_type"] == "ValueError"
     assert "ValueError: training failed" in fail_call["body"]["traceback"]
+
+
+@pytest.mark.sdk
+def test_tracker_uses_environment_aliases(monkeypatch: pytest.MonkeyPatch) -> None:
+    Tracker = importlib.import_module("mlwarden").Tracker
+
+    monkeypatch.setenv("MLWARDEN_BASE_URL", "http://env-base-url")
+    monkeypatch.setenv("MLWARDEN_URL", "http://legacy-url")
+    monkeypatch.setenv("MLWARDEN_TOKEN", "env-token")
+    monkeypatch.setenv("MLWARDEN_API_KEY", "legacy-key")
+
+    tracker = Tracker()
+
+    assert tracker.base_url == "http://env-base-url"
+    assert tracker.api_key == "env-token"
+
+
+@pytest.mark.sdk
+def test_run_create_chart_uses_project_chart_endpoint(
+    sdk_mock_server: tuple[str, list[dict[str, Any]]],
+) -> None:
+    base_url, calls = sdk_mock_server
+    Tracker = importlib.import_module("mlwarden").Tracker
+
+    tracker = Tracker(base_url=base_url, api_key=TEST_API_KEY, project="sdk-project")
+    run = tracker.create_run(project={"id": "project-sdk", "name": "sdk-project"})
+    chart = run.create_chart(
+        "Accuracy over epochs",
+        config={
+            "source": "metrics",
+            "runId": run.id,
+            "metric": "val_accuracy",
+            "xAxis": "step",
+            "yAxis": "val_accuracy",
+        },
+    )
+
+    assert chart["id"] == "chart-sdk"
+    assert chart["project_id"] == "project-sdk"
+    assert chart["name"] == "Accuracy over epochs"
+    chart_call = next(call for call in calls if call["name"] == "create_chart")
+    assert chart_call["project_id"] == "project-sdk"
+    assert chart_call["body"] == {
+        "name": "Accuracy over epochs",
+        "chart_type": "line",
+        "config": {
+            "source": "metrics",
+            "runId": "run-sdk",
+            "metric": "val_accuracy",
+            "xAxis": "step",
+            "yAxis": "val_accuracy",
+        },
+    }

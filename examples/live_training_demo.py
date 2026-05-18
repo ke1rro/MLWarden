@@ -33,7 +33,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _set_pixel(
-    pixels: bytearray, width: int, height: int, x: int, y: int, color: tuple[int, int, int]
+    pixels: bytearray,
+    width: int,
+    height: int,
+    x: int,
+    y: int,
+    color: tuple[int, int, int],
 ) -> None:
     if x < 0 or y < 0 or x >= width or y >= height:
         return
@@ -110,11 +115,19 @@ def write_preview(path: Path, step: int, total_steps: int) -> Path:
         _fill_rect(pixels, width, height, (x0, y0, x0 + tile_w, y0 + tile_h), bg)
         _fill_rect(pixels, width, height, (x0, y0, x0 + tile_w, y0 + 2), (203, 213, 225))
         _fill_rect(
-            pixels, width, height, (x0, y0 + tile_h - 2, x0 + tile_w, y0 + tile_h), (203, 213, 225)
+            pixels,
+            width,
+            height,
+            (x0, y0 + tile_h - 2, x0 + tile_w, y0 + tile_h),
+            (203, 213, 225),
         )
         _fill_rect(pixels, width, height, (x0, y0, x0 + 2, y0 + tile_h), (203, 213, 225))
         _fill_rect(
-            pixels, width, height, (x0 + tile_w - 2, y0, x0 + tile_w, y0 + tile_h), (203, 213, 225)
+            pixels,
+            width,
+            height,
+            (x0 + tile_w - 2, y0, x0 + tile_w, y0 + tile_h),
+            (203, 213, 225),
         )
 
         cx = x0 + tile_w // 2 + rng.randint(-3, 3)
@@ -130,7 +143,11 @@ def write_preview(path: Path, step: int, total_steps: int) -> Path:
         confidence = min(0.99, 0.48 + progress * 0.45 + rng.uniform(-0.04, 0.04))
         bar_y = y0 + tile_h - 12
         _fill_rect(
-            pixels, width, height, (x0 + 10, bar_y, x0 + tile_w - 10, bar_y + 5), (219, 234, 254)
+            pixels,
+            width,
+            height,
+            (x0 + 10, bar_y, x0 + tile_w - 10, bar_y + 5),
+            (219, 234, 254),
         )
         _fill_rect(
             pixels,
@@ -167,7 +184,10 @@ def main(argv: list[str] | None = None) -> int:
         name=f"live-demo-{int(time.time())}",
         params={"steps": args.steps, "delay_seconds": args.delay, "optimizer": "adamw"},
         tags=["demo", "live", "realtime"],
-        metadata={"worker": "live-demo-worker", "created_by": "examples/live_training_demo.py"},
+        metadata={
+            "worker": "live-demo-worker",
+            "created_by": "examples/live_training_demo.py",
+        },
     )
     run.start()
     run.define_panel("Training loss", "train.loss", chart_type="area", area=True, size="lg")
