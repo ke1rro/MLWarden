@@ -1,6 +1,6 @@
 import { apiClient } from '@/api/client.js'
 
-export class RunComparisonsApi {
+class RunComparisonsApi {
   constructor({ client = apiClient } = {}) {
     this.client = client
   }
@@ -27,23 +27,3 @@ export class RunComparisonsApi {
 }
 
 export const runComparisonsApi = new RunComparisonsApi()
-
-export function compareRuns(projectId, body) {
-  return runComparisonsApi.compare(projectId, body)
-}
-
-export function listRunComparisons(projectId) {
-  return runComparisonsApi.list(projectId)
-}
-
-export function createRunComparison(projectId, body) {
-  return runComparisonsApi.create(projectId, body)
-}
-
-export function updateRunComparison(projectId, comparisonId, body) {
-  return runComparisonsApi.update(projectId, comparisonId, body)
-}
-
-export function deleteRunComparison(projectId, comparisonId) {
-  return runComparisonsApi.delete(projectId, comparisonId)
-}

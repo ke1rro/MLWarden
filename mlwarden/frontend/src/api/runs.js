@@ -1,6 +1,6 @@
 import { apiClient, buildQuery } from '@/api/client.js'
 
-export class RunsApi {
+class RunsApi {
   constructor({ client = apiClient } = {}) {
     this.client = client
   }
@@ -27,23 +27,3 @@ export class RunsApi {
 }
 
 export const runsApi = new RunsApi()
-
-export function listRuns(projectId, params) {
-  return runsApi.list(projectId, params)
-}
-
-export function createRun(projectId, body) {
-  return runsApi.create(projectId, body)
-}
-
-export function getRun(runId) {
-  return runsApi.get(runId)
-}
-
-export function updateRun(runId, body) {
-  return runsApi.update(runId, body)
-}
-
-export function deleteRun(runId) {
-  return runsApi.delete(runId)
-}

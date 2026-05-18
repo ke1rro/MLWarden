@@ -1,6 +1,6 @@
 import { apiClient, buildQuery } from './client.js'
 
-export class SystemApi {
+class SystemApi {
   constructor({ client = apiClient } = {}) {
     this.client = client
   }
@@ -15,11 +15,3 @@ export class SystemApi {
 }
 
 export const systemApi = new SystemApi()
-
-export function getSystemMetrics() {
-  return systemApi.getMetrics()
-}
-
-export function getSystemMetricsHistory(options) {
-  return systemApi.getMetricsHistory(options)
-}

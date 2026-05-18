@@ -1,6 +1,6 @@
 import { getAccessToken, WS_BASE_URL } from '@/api/client.js'
 
-export class WebsocketApi {
+class WebsocketApi {
   constructor({
     tokenProvider = getAccessToken,
     wsBaseUrl = WS_BASE_URL,
@@ -79,7 +79,3 @@ export class WebsocketApi {
 }
 
 export const websocketApi = new WebsocketApi()
-
-export function createWebSocketConnection({ onOpen, onClose, onMessage }) {
-  return websocketApi.createConnection({ onOpen, onClose, onMessage })
-}

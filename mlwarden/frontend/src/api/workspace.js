@@ -4,7 +4,7 @@ import { chartsApi } from '@/api/charts.js'
 import { projectsApi } from '@/api/projects.js'
 import { runsApi } from '@/api/runs.js'
 
-export class WorkspaceApi {
+class WorkspaceApi {
   constructor({
     artifacts = artifactsApi,
     charts = chartsApi,
@@ -83,23 +83,3 @@ export class WorkspaceApi {
 }
 
 export const workspaceApi = new WorkspaceApi()
-
-export async function loadProjects() {
-  return workspaceApi.loadProjects()
-}
-
-export async function loadAllRuns(projectsInput) {
-  return workspaceApi.loadAllRuns(projectsInput)
-}
-
-export async function loadAllCharts(projectsInput) {
-  return workspaceApi.loadAllCharts(projectsInput)
-}
-
-export async function loadAllArtifacts(projectsInput, runsInput) {
-  return workspaceApi.loadAllArtifacts(projectsInput, runsInput)
-}
-
-export async function loadWorkspaceSnapshot({ includeArtifacts = false } = {}) {
-  return workspaceApi.loadSnapshot({ includeArtifacts })
-}

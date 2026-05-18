@@ -1,6 +1,6 @@
 import { apiClient, buildQuery } from '@/api/client.js'
 
-export class ImagesApi {
+class ImagesApi {
   constructor({ client = apiClient } = {}) {
     this.client = client
   }
@@ -29,19 +29,3 @@ export class ImagesApi {
 }
 
 export const imagesApi = new ImagesApi()
-
-export function listImages(runId, params = {}) {
-  return imagesApi.list(runId, params)
-}
-
-export function getImage(imageId) {
-  return imagesApi.get(imageId)
-}
-
-export function getImageFileUrl(imageId) {
-  return imagesApi.getFileUrl(imageId)
-}
-
-export function uploadImage(runId, { file, name, step, caption, metadata }) {
-  return imagesApi.upload(runId, { file, name, step, caption, metadata })
-}

@@ -66,29 +66,12 @@
   text-decoration: none;
 }
 
-.run-name-link {
-  color: var(--color-text);
-}
-
 .run-color-dot {
   border-radius: 999px;
   display: inline-block;
   flex: 0 0 auto;
   height: 10px;
   width: 10px;
-}
-
-.compact-runs {
-  min-height: 0;
-}
-
-.compact-runs .data-table {
-  min-width: 0;
-}
-
-.compact-runs th,
-.compact-runs td {
-  padding: 11px 12px;
 }
 
 .muted-cell {

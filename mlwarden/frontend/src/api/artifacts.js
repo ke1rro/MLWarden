@@ -1,6 +1,6 @@
 import { apiClient, buildQuery } from '@/api/client.js'
 
-export class ArtifactsApi {
+class ArtifactsApi {
   constructor({ client = apiClient } = {}) {
     this.client = client
   }
@@ -28,19 +28,3 @@ export class ArtifactsApi {
 }
 
 export const artifactsApi = new ArtifactsApi()
-
-export function listArtifacts(runId, params = {}) {
-  return artifactsApi.list(runId, params)
-}
-
-export function getArtifact(artifactId) {
-  return artifactsApi.get(artifactId)
-}
-
-export function downloadArtifact(artifactId, filename) {
-  return artifactsApi.download(artifactId, filename)
-}
-
-export function uploadArtifact(runId, { file, name, artifactPath, metadata }) {
-  return artifactsApi.upload(runId, { file, name, artifactPath, metadata })
-}

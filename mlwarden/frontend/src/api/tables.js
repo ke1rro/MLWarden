@@ -1,6 +1,6 @@
 import { apiClient, buildQuery } from '@/api/client.js'
 
-export class TablesApi {
+class TablesApi {
   constructor({ client = apiClient } = {}) {
     this.client = client
   }
@@ -23,19 +23,3 @@ export class TablesApi {
 }
 
 export const tablesApi = new TablesApi()
-
-export function listTables(runId) {
-  return tablesApi.list(runId)
-}
-
-export function replaceTable(runId, tableName, body) {
-  return tablesApi.replace(runId, tableName, body)
-}
-
-export function appendTableRows(runId, tableName, rows) {
-  return tablesApi.appendRows(runId, tableName, rows)
-}
-
-export function getTable(runId, tableName, params = {}) {
-  return tablesApi.get(runId, tableName, params)
-}

@@ -1,4 +1,4 @@
-export const AUTH_STORAGE_KEY = 'mlwarden.auth'
+const AUTH_STORAGE_KEY = 'mlwarden.auth'
 
 function defaultApiBaseUrl() {
   if (typeof window === 'undefined') return 'http://localhost:8000'
@@ -29,7 +29,7 @@ export const WS_BASE_URL = (hasWsEnv ? import.meta.env.VITE_WS_BASE_URL : DEV_FA
   '',
 )
 
-export class ApiClientError extends Error {
+class ApiClientError extends Error {
   constructor(message, { status = 0, code = 'request_error', details = {} } = {}) {
     super(message)
     this.name = 'ApiClientError'
@@ -100,7 +100,7 @@ async function parseError(response) {
   }
 }
 
-export class ApiClient {
+class ApiClient {
   constructor({ baseUrl = API_BASE_URL, tokenProvider = getAccessToken, onUnauthorized = dispatchUnauthorized } = {}) {
     this.baseUrl = baseUrl.replace(/\/$/, '')
     this.tokenProvider = tokenProvider
@@ -190,19 +190,3 @@ export class ApiClient {
 }
 
 export const apiClient = new ApiClient()
-
-export function apiRequest(path, options = {}) {
-  return apiClient.request(path, options)
-}
-
-export function downloadBlob(path) {
-  return apiClient.downloadBlob(path)
-}
-
-export function downloadToFile(path, fallbackName) {
-  return apiClient.downloadToFile(path, fallbackName)
-}
-
-export function fileObjectUrl(path) {
-  return apiClient.fileObjectUrl(path)
-}

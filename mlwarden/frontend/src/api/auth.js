@@ -1,6 +1,6 @@
 import { apiClient } from '@/api/client.js'
 
-export class AuthApi {
+class AuthApi {
   constructor({ client = apiClient } = {}) {
     this.client = client
   }
@@ -15,11 +15,3 @@ export class AuthApi {
 }
 
 export const authApi = new AuthApi()
-
-export function loginRequest(credentials) {
-  return authApi.login(credentials)
-}
-
-export function getCurrentUser() {
-  return authApi.currentUser()
-}

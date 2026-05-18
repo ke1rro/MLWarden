@@ -1,6 +1,6 @@
 import { apiClient, buildQuery } from '@/api/client.js'
 
-export class EventsApi {
+class EventsApi {
   constructor({ client = apiClient } = {}) {
     this.client = client
   }
@@ -15,11 +15,3 @@ export class EventsApi {
 }
 
 export const eventsApi = new EventsApi()
-
-export function listRunEvents(runId, params = {}) {
-  return eventsApi.listRun(runId, params)
-}
-
-export function listRecentEvents(params = {}) {
-  return eventsApi.listRecent(params)
-}

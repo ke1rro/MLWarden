@@ -123,14 +123,9 @@
 
 .toolbar select,
 .toolbar input,
-.builder-panel select,
-.builder-panel input,
-.builder-panel textarea,
 .builder-controls select,
 .builder-controls input,
 .builder-controls textarea,
-.settings-panel input,
-.settings-panel select,
 .settings-form-grid input,
 .settings-form-grid select,
 .settings-form-grid textarea {
@@ -142,9 +137,6 @@
   padding: 7px 10px;
 }
 
-.builder-panel input,
-.builder-panel select,
-.builder-panel textarea,
 .builder-controls input,
 .builder-controls select,
 .builder-controls textarea {
@@ -153,16 +145,9 @@
   width: 100%;
 }
 
-.builder-panel textarea,
 .builder-controls textarea,
 .settings-form-grid textarea {
   resize: none;
-}
-
-.settings-toggle {
-  align-items: center;
-  display: flex;
-  gap: var(--space-2);
 }
 
 .card-grid {
@@ -254,27 +239,6 @@
   position: absolute;
   right: var(--space-2);
   top: var(--space-2);
-}
-
-
-
-.empty-action-panel {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.mini-metric-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.mini-metric-row small {
-  background: var(--color-bg-soft);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  color: var(--color-muted);
-  padding: 5px 8px;
 }
 
 .metric-grid {
@@ -752,8 +716,7 @@
   justify-content: flex-end;
 }
 
-.metadata-panel,
-.help-guide pre {
+.metadata-panel {
   background: #0f172a;
   border-radius: var(--radius-sm);
   color: #dbeafe;
@@ -764,27 +727,6 @@
   overflow: auto;
   padding: var(--space-3);
   white-space: pre-wrap;
-}
-
-.help-guide {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.global-search-modal-input {
-  align-items: center;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  display: flex;
-  gap: var(--space-2);
-  padding: 10px 12px;
-}
-
-.global-search-modal-input input {
-  border: 0;
-  min-width: 0;
-  outline: 0;
-  width: 100%;
 }
 
 .search-loading {
@@ -855,41 +797,6 @@
   color: var(--color-muted);
   line-height: 1.6;
   margin-bottom: 0;
-}
-
-.project-settings-panel,
-.settings-summary-card {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.settings-summary-card {
-  background: var(--color-panel-muted);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
-}
-
-.settings-summary-card dl {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-}
-
-.settings-summary-card dl div {
-  display: grid;
-  gap: 3px;
-}
-
-.settings-summary-card dt {
-  color: var(--color-muted);
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.settings-summary-card dd {
-  margin: 0;
 }
 
 .search-result-group h3 {

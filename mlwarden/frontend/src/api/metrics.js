@@ -1,6 +1,6 @@
 import { apiClient, buildQuery } from '@/api/client.js'
 
-export class MetricsApi {
+class MetricsApi {
   constructor({ client = apiClient } = {}) {
     this.client = client
   }
@@ -23,19 +23,3 @@ export class MetricsApi {
 }
 
 export const metricsApi = new MetricsApi()
-
-export function logMetric(runId, body) {
-  return metricsApi.log(runId, body)
-}
-
-export function logMetrics(runId, metrics) {
-  return metricsApi.logBatch(runId, metrics)
-}
-
-export function getMetrics(runId, names = []) {
-  return metricsApi.get(runId, names)
-}
-
-export function getMetricSummary(runId) {
-  return metricsApi.summary(runId)
-}

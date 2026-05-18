@@ -1,6 +1,6 @@
 import { apiClient } from '@/api/client.js'
 
-export class ChartsApi {
+class ChartsApi {
   constructor({ client = apiClient } = {}) {
     this.client = client
   }
@@ -27,23 +27,3 @@ export class ChartsApi {
 }
 
 export const chartsApi = new ChartsApi()
-
-export function listCharts(projectId) {
-  return chartsApi.list(projectId)
-}
-
-export function createChart(projectId, body) {
-  return chartsApi.create(projectId, body)
-}
-
-export function getChart(chartId) {
-  return chartsApi.get(chartId)
-}
-
-export function updateChart(chartId, body) {
-  return chartsApi.update(chartId, body)
-}
-
-export function deleteChart(chartId) {
-  return chartsApi.delete(chartId)
-}

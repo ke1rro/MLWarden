@@ -1,4 +1,4 @@
-export const runColorPalette = [
+const runColorPalette = [
   '#5387dd',
   '#ffb000',
   '#ff7f0e',
@@ -28,7 +28,7 @@ function hashString(value) {
     }, 0)
 }
 
-export function runColorForId(value, offset = 0) {
+function runColorForId(value, offset = 0) {
   const index = Math.abs(hashString(value) + offset) % runColorPalette.length
   return runColorPalette[index]
 }
