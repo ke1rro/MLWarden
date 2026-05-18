@@ -118,7 +118,11 @@ def aggregate_metric_series(
         value = aggregate_values(by_x[key], mode)
         if value is not None:
             aggregated.append(
-                {"x": key, "step": key if isinstance(key, int) else index, "value": value}
+                {
+                    "x": key,
+                    "step": key if isinstance(key, int) else index,
+                    "value": value,
+                }
             )
     return aggregated
 
@@ -314,7 +318,8 @@ async def update_run_comparison(
         "primary_metric": payload.get("primary_metric", current.get("primary_metric")),
         "x_axis": payload.get("x_axis", current.get("x_axis", "step")),
         "chart_settings": require_dict(
-            payload.get("chart_settings", current.get("chart_settings")), "chart_settings"
+            payload.get("chart_settings", current.get("chart_settings")),
+            "chart_settings",
         ),
         "updated_at": utc_timestamp(),
     }

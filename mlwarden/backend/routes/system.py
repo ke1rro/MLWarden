@@ -180,7 +180,10 @@ def memory_usage() -> tuple[float | None, str]:
         total = values.get("MemTotal", 0)
         available = values.get("MemAvailable", 0)
         used = total - available
-        return percentage(used, total), f"{used / 1024**3:.1f} / {total / 1024**3:.1f} GB"
+        return (
+            percentage(used, total),
+            f"{used / 1024**3:.1f} / {total / 1024**3:.1f} GB",
+        )
 
     mac_memory = mac_memory_usage()
     if mac_memory is not None:
@@ -195,7 +198,10 @@ def disk_usage() -> tuple[float | None, str]:
         target = target.parent
     usage = shutil.disk_usage(target)
     used = usage.total - usage.free
-    return percentage(used, usage.total), f"{used / 1024**3:.1f} / {usage.total / 1024**3:.1f} GB"
+    return (
+        percentage(used, usage.total),
+        f"{used / 1024**3:.1f} / {usage.total / 1024**3:.1f} GB",
+    )
 
 
 def cpu_temperature() -> tuple[float | None, str]:
@@ -328,9 +334,21 @@ def system_metric_sample_response(sample: dict[str, Any]) -> dict[str, Any]:
         "timestamp": sample["timestamp"],
         "metrics": [
             metric("gpu-temp", "GPU temp", sample["gpu_temp"], "C", gpu_detail),
-            metric("cpu-temp", "CPU temp", sample["cpu_temp"], "C", sample["cpu_temp_detail"]),
+            metric(
+                "cpu-temp",
+                "CPU temp",
+                sample["cpu_temp"],
+                "C",
+                sample["cpu_temp_detail"],
+            ),
             metric("gpu-usage", "GPU usage", sample["gpu_usage"], "%", gpu_detail),
-            metric("cpu-usage", "CPU usage", sample["cpu_usage"], "%", sample["cpu_usage_detail"]),
+            metric(
+                "cpu-usage",
+                "CPU usage",
+                sample["cpu_usage"],
+                "%",
+                sample["cpu_usage_detail"],
+            ),
             metric("memory", "Memory", sample["memory_usage"], "%", sample["memory_detail"]),
             metric("disk", "Disk", sample["disk_usage"], "%", sample["disk_detail"]),
         ],
